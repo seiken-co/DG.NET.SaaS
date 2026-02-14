@@ -1,0 +1,2093 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<link href="favicon-32.png" rel="icon" type="image/png"/>
+<link href="icon-180.png" rel="apple-touch-icon"/>
+<link href="icon-192.png" rel="icon" sizes="192x192" type="image/png"/>
+<link href="icon-512.png" rel="icon" sizes="512x512" type="image/png"/>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<title>精研 DG.NET.SaaS 見積もり</title>
+<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<style>
+    :root{
+      --border:#333;
+      --thin:1px;
+      --bg:#fafafa;
+      --card:#fff;
+      --opt-on-bg:#e6f4ea;
+      --opt-off-bg:#ffffff;
+    }
+
+    body{
+      font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+      margin: 12px;
+      color:#111;
+      background: var(--bg);
+    }
+
+    .app-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      margin-bottom:10px;
+    }
+    .app-title{
+      font-weight:900;
+      letter-spacing: .5px;
+    }
+    .app-sub{
+      font-size:12px;
+      color:#666;
+      margin-top:2px;
+    }
+
+    .toolbar{
+      display:flex; gap:8px; flex-wrap:wrap;
+      align-items:center;
+      margin-bottom:10px;
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      background: var(--bg);
+      padding: 8px 0;
+    }
+
+    .btn{
+      border:1px solid #ddd;
+      background:#fff;
+      border-radius:10px;
+      padding:8px 10px;
+      font-size: 13px;
+      cursor:pointer;
+    }
+    .btn.mini{ padding:6px 10px; font-size:12px; }
+    .section-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; }
+
+    .btn.primary{
+      border-color:#111;
+      font-weight:800;
+    }
+
+    .card{
+      border:1px solid #ddd; border-radius:12px;
+      background: var(--card);
+      padding:12px; margin-bottom:12px;
+      box-shadow: 0 1px 0 rgba(0,0,0,.02);
+    }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+
+    .row{
+      display:flex; gap:8px; align-items:center; flex-wrap:wrap;
+    }
+
+    label{ font-size: 13px; font-weight:700; }
+    input, select, textarea{
+      font-size: 14px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+      flex: 1;
+    }
+    textarea{ min-height: 70px; resize: vertical; }
+
+    #notes{
+      width: 100%;
+      min-height: 110px;
+    }
+    input.qty{
+      width: 100%;
+      flex: 0 0 auto;
+    }
+    .row > div[style*="width:130px"] input,
+    .row > div[style*="width:120px"] input{
+      width: 100%;
+      flex: 0 0 auto;
+    }
+
+    .muted{
+      font-size: 12px;
+      color: #666;
+    }
+
+    #seidNo{
+      max-width: 280px;
+    }
+    #toBase{
+      min-width: 320px;
+    }
+    .opt-head{
+      font-weight: 800;
+      font-size: 13px;
+      margin-bottom: 8px;
+      color: #111;
+    }
+
+    .opt-panel > summary.opt-head{
+      list-style: none;
+      cursor: pointer;
+      padding: 10px 12px;
+      border-radius: 8px;
+      background: #f1f3f5;
+      border: 1px solid #d6dbe0;
+      font-weight: 800;
+      margin: 0;
+    }
+    .opt-panel > summary.opt-head::-webkit-details-marker{ display:none; }
+
+    .opt-panel[open] > summary.opt-head{
+      background: #e9edf2;
+      border-color: #cfd6dd;
+    }
+
+    .opt-panel > summary.opt-head:hover{
+      background: #e6eaef;
+    }
+
+    .opt-panel > summary.opt-head .muted{
+      margin-left: 6px;
+      font-weight: 600;
+      color: #555;
+    }
+
+    .opt-panel{
+      border-top: 1px solid #ddd;
+      padding-top: 10px;
+    }
+    .opt-panel summary{
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .opt-list{
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .opt-row{
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 8px;
+      background: var(--opt-off-bg);
+      border: 1px solid #ddd;
+      transition: background .2s;
+    }
+    .opt-row.on{
+      background: var(--opt-on-bg);
+      border-color: #6ba368;
+    }
+
+    .opt-label{
+      flex: 1;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .opt-qty{
+      width: 80px;
+    }
+
+    .switch{
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+    .switch input{
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider{
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #ccc;
+      transition: .3s;
+      border-radius: 24px;
+    }
+    .slider:before{
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+    .switch input:checked + .slider{
+      background:#111;
+    }
+    .switch input:checked + .slider:before{
+      transform: translateX(20px);
+    }
+
+    .opt-row.off .opt-label{ color:#222; }
+    .opt-row.on  .opt-label{ color:#111; }
+
+    .neg{ color:#b00000; }
+    .neg-input{ color:#b00000; }
+
+    @media (max-width: 980px){
+      .grid{ grid-template-columns: 1fr; }
+      .toolbar{ gap:6px; }
+    }
+
+    @media print{
+      html, body{ margin:0; padding:0; background:#fff; }
+      @page{ size: A4; margin: 10mm; }
+
+      .no-print{ display:none !important; }
+
+      .print-area{ margin:0; padding:0; max-width:none; }
+      .paper{
+        width: 210mm;
+        min-height: auto !important;
+        height: auto !important;
+        padding: 10mm 12mm;
+        box-sizing: border-box;
+      }
+
+      table{ page-break-inside: auto; }
+      tr{ page-break-inside: avoid; page-break-after: auto; }
+      thead{ display: table-header-group; }
+      tfoot{ display: table-footer-group; }
+    }
+
+    body.pdf-mode{
+      background: #fff;
+      margin: 0;
+      padding: 0;
+    }
+    body.pdf-mode .no-print{ display: none !important; }
+    body.pdf-mode .print-area{
+      margin: 0;
+      padding: 0;
+      max-width: none;
+    }
+    body.pdf-mode .paper{
+      width: 210mm;
+      min-height: auto !important;
+      height: auto !important;
+      padding: 10mm 12mm;
+      box-sizing: border-box;
+      margin: 0 auto;
+      background: white;
+    }
+
+    .print-area{
+      max-width: 960px;
+      margin: 20px auto;
+    }
+
+    .paper{
+      width: 210mm;
+      min-height: 297mm;
+      padding: 10mm 12mm;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      box-sizing: border-box;
+      font-size: 11pt;
+      line-height: 1.5;
+      position: relative;
+    }
+
+    .header{
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      align-items: center;
+      margin-bottom: 4mm;
+    }
+    .header .no{
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .header .title{
+      text-align: center;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 6px;
+    }
+    .header .date{
+      text-align: right;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .top-block{
+      margin-top: 4mm;
+      display: grid;
+      grid-template-columns: 1fr 68mm;
+      gap: 10mm;
+      align-items: start;
+    }
+    .to{
+      padding-top: 2mm;
+    }
+    .to-name{
+      font-size: 21px;
+      font-weight: 800;
+      display: inline-block;
+      padding-bottom: 2mm;
+      border-bottom: 1px solid #333;
+      min-width: 115mm;
+    }
+
+    .issuer{
+      border: 1px solid #333;
+      padding: 4mm 4mm 3mm 4mm;
+      box-sizing: border-box;
+      font-size: 11px;
+      position: relative;
+    }
+    .seiken-stamp{
+      display: block;
+      width: 58mm;
+      height: auto;
+      margin-bottom: 3mm;
+    }
+    .issuer-text{
+      /* 会社情報テキスト */
+    }
+    .issuer .rowline{
+      display: flex;
+      gap: 3px;
+      white-space: nowrap;
+      margin: 0.8mm 0;
+    }
+    .issuer .k{
+      width: 10mm;
+      font-weight: 700;
+    }
+    .issuer .v{
+      flex: 1;
+      white-space: normal;
+    }
+
+    .greeting{
+      margin-top: 4mm;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .summary{
+      margin-top: 2mm;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      align-items: end;
+      border-top: 1px solid #333;
+      border-bottom: 1px solid #333;
+      padding: 2.5mm 0;
+    }
+    .sum-label{
+      font-size: 14px;
+      font-weight: 900;
+    }
+    .sum-amount{
+      text-align: right;
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 1px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    table.cond{
+      margin-top: 4mm;
+      border: 1px solid #333;
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 12px;
+    }
+    table.cond td{
+      border: 1px solid #333;
+      padding: 2.2mm;
+      vertical-align: middle;
+    }
+    table.cond .k{
+      width: 18mm;
+      font-weight: 800;
+      background: #f7f7f7;
+    }
+    table.cond .v{
+      width: 60mm;
+    }
+    table.cond .k2{
+      width: 22mm;
+      font-weight: 800;
+      background: #f7f7f7;
+    }
+    #outPlace{
+      white-space: pre-line;
+    }
+
+    table.items{
+      margin-top: 4mm;
+      border: 1px solid #333;
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 12px;
+    }
+    table.items th, table.items td{
+      border: 1px solid #333;
+      padding: 2.1mm;
+    }
+    table.items th{
+      background: #f7f7f7;
+      font-weight: 900;
+    }
+    table.items .c-qty{
+      width: 12mm;
+      text-align: center;
+    }
+    table.items .c-unit{
+      width: 28mm;
+      text-align: right;
+    }
+    table.items .c-amt{
+      width: 28mm;
+      text-align: right;
+    }
+    table.items .desc{
+      width: auto;
+    }
+
+    .section-subtotal{
+      background: #f0f0f0;
+      font-weight: 800;
+    }
+
+    .bottom{
+      margin-top: 4mm;
+      display: grid;
+      grid-template-columns: 1fr 70mm;
+      gap: 6mm;
+      align-items: start;
+    }
+    .note-box{
+      border: 1px solid #333;
+      min-height: 36mm;
+      padding: 2.5mm;
+      box-sizing: border-box;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+    table.totals{
+      border: 1px solid #333;
+      border-collapse: collapse;
+      width: 100%;
+      font-size: 12px;
+    }
+    table.totals td{
+      border: 1px solid #333;
+      padding: 2.2mm;
+    }
+    table.totals .k{
+      width: 18mm;
+      font-weight: 800;
+      background: #f7f7f7;
+      text-align: center;
+    }
+    table.totals .v{
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .caution{
+      margin-top: 4mm;
+      font-size: 11px;
+    }
+    .caution .head{
+      font-weight: 800;
+      margin-bottom: 2mm;
+    }
+    .caution ul{
+      margin: 0;
+      padding-left: 18px;
+    }
+    .caution li{
+      margin-bottom: 1mm;
+    }
+
+    .terms-section{
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid #999;
+      font-size: 8pt;
+      line-height: 1.4;
+    }
+    .terms-section .terms-head{
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+</style>
+</head>
+<body>
+
+<div class="no-print">
+<div class="app-head">
+  <div>
+    <div class="app-title">精研 DG.NET.SaaS 見積もり</div>
+    <div class="app-sub">DG.NET.SaaS専用見積作成アプリ</div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <button class="btn primary" type="button" onclick="SetSEID()">次の番号（SEID採番）</button>
+  <button class="btn" type="button" onclick="saveAsPDF()">保存（PDF）</button>
+  <button class="btn" type="button" onclick="printQuote()">印刷</button>
+  <button class="btn" type="button" onclick="resetAll()">全リセット</button>
+</div>
+
+<div class="card">
+  <div class="section-head">
+    <div class="opt-head">基本情報</div>
+    <button class="btn mini" type="button" onclick="resetBasicInfoSection()">この欄をリセット</button>
+  </div>
+  <div class="grid">
+    <div>
+      <label>見積番号（お客様向け）</label>
+      <div style="display:flex; gap:8px; align-items:center">
+        <input type="text" id="seidNo" placeholder="例：SEID-0001" style="flex:1" oninput="applyAndRender()" />
+        <button class="btn" type="button" onclick="SetSEID()" style="white-space:nowrap; font-size:13px; padding:8px 12px">次の番号</button>
+      </div>
+      <div class="muted" style="margin-top:4px">SEID採番後に表示</div>
+    </div>
+    <div>
+      <label>発行日</label>
+      <input type="date" id="issueDate" onchange="applyAndRender()" />
+    </div>
+  </div>
+  
+  <div class="grid" style="margin-top:10px">
+    <div>
+      <label>管理番号（自動生成）</label>
+      <input type="text" id="quoteNo" placeholder="例：DH-DGNET-20260211-193503" oninput="quoteNoManuallyEdited=true; applyAndRender()" />
+      <div class="muted" style="margin-top:6px">形式：担当者-DGNET-日付-時刻</div>
+    </div>
+    <div></div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1">
+      <label>宛名（会社名等）</label>
+      <input type="text" id="toBase" placeholder="例：株式会社○○" oninput="applyAndRender()" />
+    </div>
+    <div style="width:120px">
+      <label>敬称</label>
+      <select id="toHonorific" onchange="applyAndRender()">
+        <option value="御中">御中</option>
+        <option value="様">様</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1">
+      <label>担当者</label>
+      <select id="tantouSelect" onchange="onTantouChange()">
+        <option value="">選択してください</option>
+        <option value="樋口大">樋口大</option>
+        <option value="巽隆充">巽隆充</option>
+        <option value="三谷剛史">三谷剛史</option>
+        <option value="山崎迅人">山崎迅人</option>
+        <option value="與那城昭彦">與那城昭彦</option>
+        <option value="八田雅隆">八田雅隆</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1">
+      <label>納期</label>
+      <input type="text" id="delivery" placeholder="例：受注後 約3カ月" oninput="applyAndRender()" />
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1; min-width:0">
+      <label>受渡場所（郵便番号）</label>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center">
+        <input type="text" id="zip" placeholder="例：573-0102" style="flex:1; min-width:180px" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupZip();}" oninput="applyAndRender()" />
+        <button class="btn" type="button" onclick="lookupZip()" style="white-space:nowrap; font-size:14px; padding:10px 12px">住所自動入力</button>
+      </div>
+      <div class="muted" style="margin-top:4px">※町名まで自動入力。番地・建物名は下で手入力。Enterキーでも検索できます。</div>
+    </div>
+    <div style="flex:1"></div>
+  </div>
+
+  <div class="row" style="margin-top:6px">
+    <div style="flex:1">
+      <label>都道府県</label>
+      <input type="text" id="pref" placeholder="例：大阪府" oninput="applyAndRender()" />
+    </div>
+    <div style="flex:1">
+      <label>市区町村</label>
+      <input type="text" id="city" placeholder="例：枚方市" oninput="applyAndRender()" />
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:6px">
+    <div style="flex:1">
+      <label>町域</label>
+      <input type="text" id="town" placeholder="例：長尾家具町" oninput="applyAndRender()" />
+    </div>
+    <div style="flex:1">
+      <label>番地・建物名（手入力）</label>
+      <input type="text" id="addr2" placeholder="例：3-12-3 ○○ビル2F" oninput="applyAndRender()" />
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1">
+      <label>支払条件</label>
+      <input type="text" id="payment" placeholder="例：納入時 現金一括払い" oninput="applyAndRender()" />
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1">
+      <label>見積有効期限</label>
+      <input type="text" id="valid" placeholder="例：30日" oninput="applyAndRender()" />
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <label>備考（御見積書下部に表示）</label>
+    <textarea id="notes" oninput="applyAndRender()"></textarea>
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-head">
+    <div class="opt-head">刺繍ソフト（DG）</div>
+    <button class="btn mini" type="button" onclick="resetDGSoftwareSection()">刺繍ソフトをリセット</button>
+  </div>
+  <div class="row">
+    <div style="flex:1">
+      <label>DGグレード</label>
+      <select id="dgGrade" style="width:100%"></select>
+      <div class="muted" style="margin-top:6px">※ DG-Sは別枠扱い（オプション／フォントは選択不可）</div>
+    </div>
+    <div style="width:130px">
+      <label>数量</label>
+      <input type="number" id="dgQty" class="qty" min="1" step="1" value="1" oninput="applyAndRender()" />
+    </div>
+  </div>
+
+  <details class="opt-panel" id="dgOptPanel" style="margin-top:14px">
+    <summary class="opt-head" style="margin:0">DGオプション（グレード連動） <span class="muted" id="dgOptSummary"></span></summary>
+    <div class="opt-row off" id="dgopt_row_DG_LESSON" style="margin-top:10px">
+      <label class="switch">
+        <input type="checkbox" id="dgopt_DG_LESSON" onchange="toggleDGItem('dgopt','DG_LESSON')" />
+        <span class="slider"></span>
+      </label>
+      <div class="opt-label">DG講習費用</div>
+      <div style="margin-left:auto; display:flex; gap:10px; align-items:center">
+        <span style="color:#666; font-size:12px;">金額</span>
+        <input type="number" id="dgopt_DG_LESSON_price" min="0" step="1" value="0" style="width:130px; text-align:right" oninput="applyAndRender()" />
+        <input type="number" id="dgopt_DG_LESSON_qty" class="opt-qty" min="1" step="1" value="1" oninput="applyAndRender()" />
+      </div>
+    </div>
+    <div class="opt-list" id="dgOptList" style="margin-top:10px"></div>
+  </details>
+
+  <details class="opt-panel" id="dgFontPanel" style="margin-top:14px">
+    <summary class="opt-head" style="margin:0">DGフォント（グレード連動） <span class="muted" id="dgFontSummary"></span></summary>
+    <div class="opt-list" id="dgFontList" style="margin-top:10px"></div>
+  </details>
+
+  <details class="opt-panel" id="dgLanPanel" style="margin-top:14px">
+    <summary class="opt-head" style="margin:0">LAN刺繍機ライセンス <span class="muted" id="dgLanSummary"></span></summary>
+    <div class="opt-list" id="dgLanList" style="margin-top:10px"></div>
+  </details>
+</div>
+
+<div class="card">
+  <div class="section-head">
+    <div class="opt-head">DG.NET.SaaS サービス選択</div>
+    <button class="btn mini" type="button" onclick="resetDGNetSection()">この項目のみリセット</button>
+  </div>
+  
+  <div class="row">
+    <label>サービスベース（いずれか1つを選択）</label>
+    <select id="dgnetBase" onchange="onDGNetBaseChange()">
+      <option value="">選択してください</option>
+      <option value="ONDEMAND">オンデマンド（¥274,000/年、ジョブ数6,000）</option>
+      <option value="PERSO1">パーソナライゼーション1（¥476,000/年、ジョブ数6,000）</option>
+      <option value="PERSO2">パーソナライゼーション2（¥916,000/年、ジョブ数18,000）</option>
+      <option value="PERSO3">パーソナライゼーション3（¥1,512,000/年、ジョブ数48,000）</option>
+      <option value="PERSO4">パーソナライゼーション4（¥2,134,000/年、ジョブ数120,000）</option>
+      <option value="PERSO5">パーソナライゼーション5（¥10,667,000/年、ジョブ数720,000）</option>
+    </select>
+  </div>
+
+  <details class="opt-panel" id="dgnetOptionsPanel" style="display:none;">
+    <summary class="opt-head">
+      オプション選択
+      <span class="muted" id="dgnetOptionsSummary"></span>
+    </summary>
+    <div class="opt-list" id="dgnetOptionsList" style="margin-top:10px;"></div>
+  </details>
+
+</div>
+
+<div class="card">
+  <div class="section-head">
+    <div class="opt-head">フリーフォーム明細（DG16など追加商品）</div>
+    <button class="btn mini" type="button" onclick="resetFreeform()">明細リセット</button>
+  </div>
+  <div id="freeformList"></div>
+  <div style="display:flex; gap:8px; margin-top:10px;">
+    <button class="btn" type="button" onclick="addFreeformProduct()">商品行を追加</button>
+    <button class="btn" type="button" onclick="addFreeformText()">テキスト行を追加</button>
+  </div>
+  <div class="muted" style="margin-top:8px;">
+    ※ DG16などの必須機器や追加商品をここに入力してください<br>
+    ※ 商品行：品名・数量・単価を入力（金額計算あり）<br>
+    ※ テキスト行：説明文のみ（金額計算なし）
+  </div>
+</div>
+
+</div>
+
+<div class="print-area">
+<div class="paper" id="paper">
+<div class="header">
+<div class="no" id="outNo">No.--MODEL----------</div>
+<div class="title">御 見 積 書</div>
+<div class="date" id="outDate">令和 -- 年 -- 月 -- 日</div>
+</div>
+<div class="top-block">
+<div class="to">
+<div class="to-name" id="outTo">株式会社　＿＿＿＿　御中</div>
+</div>
+<div class="issuer">
+  <!-- ロゴ＋印鑑 -->
+  <img src="seiken-stamp.png" class="seiken-stamp" alt="株式会社精研 印影">
+
+  <!-- 会社情報 -->
+  <div class="issuer-text">
+    <div class="rowline"><div class="k">〒</div><div class="v">573-0102</div></div>
+    <div class="rowline"><div class="k"></div><div class="v">大阪府枚方市長尾家具町3-12-3</div></div>
+    <div class="rowline"><div class="k">TEL</div><div class="v">072-856-8253</div></div>
+    <div class="rowline"><div class="k">FAX</div><div class="v">072-856-8254</div></div>
+    <div class="rowline"><div class="k">担当者</div><div class="v" id="outTantou"></div></div>
+  </div>
+</div>
+</div>
+<div class="greeting">下記の通り、御見積申し上げます。</div>
+<div class="summary">
+<div class="sum-label">総金額</div>
+<div class="sum-amount" id="outGrand">￥0 -</div>
+</div>
+<table class="cond">
+<tr>
+<td class="k">納期</td><td class="v" id="outDelivery">受注後 約3カ月</td>
+<td class="k2">受渡場所</td><td id="outPlace">御社ご指定場所</td>
+</tr>
+<tr>
+<td class="k">支払条件</td><td class="v" id="outPayment">納入時 現金一括払い</td>
+<td class="k2">見積有効期限</td><td id="outValid">30日</td>
+</tr>
+</table>
+<table class="items">
+<thead>
+<tr>
+<th class="desc">品名及び仕様</th>
+<th class="c-qty">数量</th>
+<th class="c-unit">単価</th>
+<th class="c-amt">金額</th>
+</tr>
+</thead>
+<tbody id="outItems"></tbody>
+</table>
+<div class="bottom">
+<div class="note-box" id="outNotes"></div>
+<table class="totals">
+<tr><td class="k">小計</td><td class="v" id="outSub">0</td></tr>
+<tr><td class="k">消費税</td><td class="v" id="outTax">0</td></tr>
+<tr><td class="k">合計</td><td class="v" id="outTotal">0</td></tr>
+</table>
+</div>
+<div class="caution">
+<div class="head">【注意事項】</div>
+<ul>
+<li>製品保証期間は納入日より1年間です。</li>
+</ul>
+</div>
+
+<div class="terms-section">
+<div class="terms-head">■規約と条件</div>
+<div>刺繡テンプレートの作成には、DGのエレメント機能が必要です。</div>
+<div>初期セットアップ料金には、プリントおよび彫刻用に1つのPVエディターが含まれます。</div>
+<div>追加料金は初期契約の終了期限に合わせて請求し、再契約する場合には全額請求されます。</div>
+<div>（例えば、10万円のオプションを6か月後に購入した場合、残り6か月分の5万円を請求し、再契約する際には1年分の10万円が請求されます。）</div>
+<div class="terms-head" style="margin-top:8px;">■ジョブの定義</div>
+<div>ジョブとは、オーダー内での固有のパーソナル化のことをいいます。</div>
+<div>注文内の同じ製品SKUでの同じパーソナライズの複数生産は、1つのジョブと見なされます。</div>
+<div>SKUとは、単一のサイズ、場所、または色からなる特定の製品のことです。</div>
+<div class="terms-head" style="margin-top:8px;">■サービス容量を超えた場合</div>
+<div>サービス容量を超過した場合、契約期間は自動的にリセットされ、新たに契約期間分が課金されます。</div>
+<div class="terms-head" style="margin-top:8px;">■サポート</div>
+<div>必要に応じて日割りによる出張、修理サービスがあります。年間契約費に営業時間内のサポートが含まれております。</div>
+<div>インシデントの定義　インシデントとは、単一サポートの問題とそれを解決するための労力として定義されています。単一サポートの問題とは、</div>
+<div>それ以上、下位の問題に分ける事が出来ないという意味です。仮に問題が1つではなく、下位の問題とともに構成されていれば、</div>
+<div>それぞれ個別のインシデントと見なします。　サポート時間についてはSaaS契約に記載されています。</div>
+</div>
+
+</div>
+</div>
+
+<script>
+  const DGNET_MODE = true;
+  const TAX_RATE = 0.10;
+
+  // 刺繍ソフト（DG）価格・選択ルール
+  const DG_SOFTWARE = [
+    { id:'WRITER_PLUS', name:'Writer Plus（彩 付属）', price:0, optionsEnabled:false, fontsEnabled:false, lanRule:'WP' },
+    { id:'EXPRESS', name:'EXPRESS', price:165000, optionsEnabled:false, fontsEnabled:false, lanRule:'DG' },
+    { id:'COMPOSER', name:'COMPOSER', price:308000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
+    { id:'CREATOR', name:'CREATOR', price:451000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
+    { id:'ILLUSTRATOR_EXTREME', name:'ILLUSTRATOR EXTREME', price:615000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
+    { id:'ARTIST_PLUS', name:'ARTIST PLUS', price:801000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
+    { id:'MAESTRO', name:'MAESTRO', price:1081000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
+    { id:'DG_S', name:'DG-S', price:215000, optionsEnabled:false, fontsEnabled:false, lanRule:'DG' }
+  ];
+
+  const DG_OPTIONS = [
+    { id:'ELEMENT', name:'エレメント', price:57000, minGrade:'CREATOR' },
+    { id:'EVERYTHING_SEQUIN_PACK', name:'エブリシングシークインパック', price:299000, minGrade:'CREATOR' },
+    { id:'BEADS_PACK', name:'ビーズパック', price:437000, minGrade:'CREATOR' },
+    { id:'PHOTO_CREATOR', name:'フォトクリエーター', price:121000, minGrade:'ILLUSTRATOR_EXTREME' },
+    { id:'CHENILLE', name:'シェニール', price:156000, minGrade:'CREATOR' },
+    { id:'DIRECT_MACHINE_HOLDER', name:'ダイレクトマシンホルダー', price:42000, minGrade:'COMPOSER' },
+    { id:'CHENILLE_TUCKING', name:'シェニールタッキング', price:63000, minGrade:'COMPOSER' },
+    { id:'HEAD_GROUP', name:'ヘッドグループ（刺繍機ヘッド選択）', price:137000, minGrade:'ILLUSTRATOR_EXTREME' }
+  ];
+
+  const DG_FONTS = [
+    { id:'FONT_1', name:'フォント1（日本語以外）', price:38000, minGrade:'COMPOSER' },
+    { id:'SEQUIN_FONT_PACK', name:'シークインフォントパック', price:72000, minGrade:'COMPOSER' },
+    { id:'MONOGRAM_FONT_PACK', name:'モノグラムフォントパック', price:72000, minGrade:'COMPOSER' },
+    { id:'PLATINUM_FONT_PACK', name:'プラチナムフォントパック', price:180000, minGrade:'COMPOSER' },
+    { id:'FONT_MEDLEY', name:'フォントメドレー', price:72000, minGrade:'COMPOSER' },
+    { id:'SYMPHONY_1_FONT_PACK', name:'シンフォニー1 フォントパック', price:46000, minGrade:'COMPOSER' },
+    { id:'NONAKA_FONT', name:'野中フォント', price:72000, minGrade:'COMPOSER' },
+    { id:'TAJIMA_JP_FONT_DGA', name:'タジマ日本語フォント：DG:A', price:68000, minGrade:'COMPOSER' },
+    { id:'TAJIMA_JP_FONT_DGB', name:'タジマ日本語フォント：DG:B', price:68000, minGrade:'COMPOSER' },
+    { id:'TAJIMA_JP_FONT_DGC', name:'タジマ日本語フォント：DG:C（A+Bセット）', price:123000, minGrade:'COMPOSER' },
+    { id:'TAJIMA_JP_FONT_PACK', name:'タジマ日本語フォントパック（現標準フォント）', price:50000, minGrade:'COMPOSER' }
+  ];
+
+  const DG_LAN_LICENSES = {
+    DG: { id:'LAN_DG', name:'LAN刺繍機ライセンス（DG）', price:37000, note:'2〜10台目までの接続（追加）' },
+    WP: { id:'LAN_WRITER_PLUS', name:'LAN刺繍機ライセンス（ライタープラス）', price:18000, note:'2台目〜5台目の接続（追加）' }
+  };
+
+  // DG.NET.SaaS 商品マスタ
+  const DGNET_SAAS_BASE = [
+    { id:'ONDEMAND', name:'オンデマンド', price:274000, billingType:'annual', jobCount:6000 },
+    { id:'PERSO1', name:'パーソナライゼーション1', price:476000, billingType:'annual', jobCount:6000 },
+    { id:'PERSO2', name:'パーソナライゼーション2', price:916000, billingType:'annual', jobCount:18000 },
+    { id:'PERSO3', name:'パーソナライゼーション3', price:1512000, billingType:'annual', jobCount:48000 },
+    { id:'PERSO4', name:'パーソナライゼーション4', price:2134000, billingType:'annual', jobCount:120000 },
+    { id:'PERSO5', name:'パーソナライゼーション5', price:10667000, billingType:'annual', jobCount:720000 }
+  ];
+
+  const DGNET_SAAS_OPTIONS = [
+    // ハード
+    { id:'CONN', name:'出力デバイスの接続', price:30000, billingType:'annual', category:'hardware', hasQty:true, unitName:'台' },
+    
+    // オプション
+    { id:'MD', name:'モバイルデザイナー', price:207000, billingType:'annual', category:'option' },
+    { id:'ES', name:'追加EC店舗', price:42000, billingType:'annual', category:'option', hasQty:true, unitName:'店舗' },
+    
+    // スタンダードオプション
+    { id:'PA', name:'ワッペン', price:275000, billingType:'annual', category:'standard' },
+    { id:'NST', name:'標準ホスティング', price:275000, billingType:'annual', category:'standard', hasQty:true, unitName:'メディア' },
+    { id:'COLOR', name:'カラーリール API', price:403000, billingType:'annual', category:'standard' },
+    { id:'LBR', name:'レーザーブリッジ', price:403000, billingType:'annual', category:'standard' },
+    { id:'LOGO', name:'ロゴロッカー', price:275000, billingType:'annual', category:'standard' },
+    
+    // DTF
+    { id:'DTFB', name:'DTFビジネス', price:323000, billingType:'annual', category:'dtf' },
+    { id:'DTFP', name:'DTFプロフェッショナル', price:1134000, billingType:'annual', category:'dtf' },
+    
+    // 初期費用
+    { id:'SETA', name:'初期セットアップ（メディア、拠点、デザイナー、店舗を各1つ含む）', price:321000, billingType:'setup', category:'setup' },
+    { id:'SU2', name:'二次セットアップ（追加メディア、拠点、デザイナー、店舗もしくはECテーマに変更）', price:107000, billingType:'setup', category:'setup' },
+    
+    // スペシャル
+    { id:'PVEA', name:'追加PVエディター', price:67000, billingType:'setup', category:'special', hasQty:true, unitName:'個' },
+    { id:'CDEV', name:'カスタム開発', price:210000, billingType:'setup', category:'special', hasQty:true, unitName:'日' },
+    { id:'CFC', name:'カスタムフォント作成', price:162000, billingType:'setup', category:'special', hasQty:true, unitName:'フォント' },
+    
+    // サポート
+    { id:'SUP', name:'営業時間外サポート', price:101000, billingType:'incident', category:'support', hasQty:true, unitName:'インシデント' }
+  ];
+
+  // カテゴリ別表示名
+  const DGNET_CATEGORY_NAMES = {
+    'hardware': 'ハード',
+    'option': 'オプション',
+    'standard': 'スタンダードオプション',
+    'dtf': 'DTF',
+    'setup': '初期費用',
+    'special': 'スペシャル',
+    'support': 'サポート'
+  };
+
+  // SEID採番API設定
+  const QUOTE_CREATE_API_URL = window.SEID_API_ENDPOINT || 'https://daihiguchi.art/estimate-system/api/quote/create.php';
+  const QUOTE_API_KEY = window.SEID_API_KEY || 'seiken-estimate_2026_key_01271315';
+
+  // 担当者コードマップ
+  const TANTOU_CODE_MAP = {
+    '樋口大': 'DH',
+    '巽隆充': 'TT',
+    '三谷剛史': 'TM',
+    '山崎迅人': 'HY',
+    '與那城昭彦': 'AY',
+    '八田雅隆': 'MH'
+  };
+
+  let quoteNoManuallyEdited = false;
+  let SEID_CREATING = false;
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  function yyyymmddNow(d){
+    return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}`;
+  }
+  function hhmmssNow(d){
+    return `${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+  }
+
+  function getTantouCode(){
+    const name = document.getElementById('tantouSelect').value || '';
+    return TANTOU_CODE_MAP[name] || '--';
+  }
+
+  function generateQuoteNoNow(){
+    const d = new Date();
+    const tantou = getTantouCode();
+    const model = 'DGNET';
+    return `${tantou}-${model}-${yyyymmddNow(d)}-${hhmmssNow(d)}`;
+  }
+
+  function regenQuoteNo(){
+    const q = document.getElementById('quoteNo');
+    q.value = generateQuoteNoNow();
+    quoteNoManuallyEdited = false;
+    applyAndRender();
+  }
+
+  function onTantouChange(){
+    const q = document.getElementById('quoteNo');
+    if(!quoteNoManuallyEdited){
+      q.value = generateQuoteNoNow();
+    }
+    applyAndRender();
+  }
+
+  function calculateValidUntil() {
+    const issueDate = document.getElementById('issueDate').value;
+    const validText = document.getElementById('valid').value.trim() || '30日';
+    const validDays = parseInt(validText.replace(/[^0-9]/g, '')) || 30;
+    if (!issueDate) return '';
+    const d = new Date(issueDate);
+    d.setDate(d.getDate() + validDays);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  async function createSeidOnBoot(force=false){
+    if(!force && sessionStorage.getItem('SEID_ALREADY_CREATED') === '1') return;
+
+    const issueDateEl = document.getElementById('issueDate');
+    const issueDate = (issueDateEl && issueDateEl.value) ? issueDateEl.value : (() => {
+      const d = new Date();
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const dd = String(d.getDate()).padStart(2,'0');
+      const iso = `${yyyy}-${mm}-${dd}`;
+      if(issueDateEl) issueDateEl.value = iso;
+      return iso;
+    })();
+
+    const staff = (document.getElementById('tantouSelect')?.value || '').trim();
+    const customer = (document.getElementById('toBase')?.value || '').trim();
+
+    if (!staff || !customer) {
+      console.log('SEID not created yet: staff or customer missing');
+      return;
+    }
+
+    const expiresYmd = calculateValidUntil() || (() => {
+      const d2 = new Date();
+      d2.setDate(d2.getDate() + 30);
+      const yyyy2 = d2.getFullYear();
+      const mm2 = String(d2.getMonth() + 1).padStart(2, '0');
+      const dd2 = String(d2.getDate()).padStart(2, '0');
+      return `${yyyy2}-${mm2}-${dd2}`;
+    })();
+
+    const payload = {
+      api_key: QUOTE_API_KEY,
+      expires_at: expiresYmd,
+      staff: staff || '未設定',
+      customer: customer || '顧客名未入力',
+      machine: '',
+      product_code: 'DGNET',
+      total: 0,
+      admin_quote_no: (document.getElementById('quoteNo')?.value || '').trim(),
+      data: {
+        created_at: new Date().toISOString(),
+        source: 'dgnet-saas',
+        issued_at: issueDate
+      }
+    };
+
+    const res = await fetch(QUOTE_CREATE_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-KEY': QUOTE_API_KEY
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const raw = await res.text();
+    let data = null;
+    try { data = JSON.parse(raw); } catch(e){}
+
+    if(!res.ok){
+      console.error('SEID create failed', res.status, raw);
+      alert(`SEID採番に失敗しました（HTTP ${res.status}）\n${raw}`);
+      return;
+    }
+
+    const seid =
+      (data && (data.seid || data.quote_no || data.quoteNo || data.quote_number)) ||
+      (data && data.quote && (data.quote.seid || data.quote.quote_no)) ||
+      '';
+
+    if(!seid){
+      console.error('SEID not found', data);
+      alert('SEID採番レスポンスにSEIDが見つかりません。コンソールを確認してください。');
+      return;
+    }
+
+    const seidEl = document.getElementById('seidNo');
+    if(seidEl) seidEl.value = seid;
+
+    if(typeof applyAndRender === 'function') applyAndRender();
+
+    sessionStorage.setItem('SEID_ALREADY_CREATED', '1');
+    console.log('SEID created on boot:', seid);
+  }
+
+  async function SetSEID(){
+    if(SEID_CREATING) {
+      console.log('SEID採番処理中です。しばらくお待ちください。');
+      return;
+    }
+
+    const ok = confirm('SEID番号を採番します。よろしいですか?(番号が進みます)');
+    if(!ok) return;
+
+    SEID_CREATING = true;
+    try {
+      sessionStorage.removeItem('SEID_ALREADY_CREATED');
+      await createSeidOnBoot(true);
+    } finally {
+      SEID_CREATING = false;
+    }
+  }
+
+  function normalizeZip(zip){
+    return (zip || '').trim().replace(/[^\d]/g, '');
+  }
+
+  function lookupZip(){
+    const raw = document.getElementById('zip').value;
+    const zip = normalizeZip(raw);
+
+    if(!zip){
+      alert('郵便番号を入力してください');
+      return;
+    }
+    if(zip.length !== 7){
+      alert('郵便番号は7桁で入力してください（例：5730102 / 573-0102）');
+      return;
+    }
+
+    fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${zip}`)
+      .then(res => res.json())
+      .then(data => {
+        if(data.status !== 200 || !data.results || !data.results[0]){
+          alert('住所が見つかりませんでした');
+          return;
+        }
+        const r = data.results[0];
+        document.getElementById('pref').value = r.address1 || '';
+        document.getElementById('city').value = r.address2 || '';
+        document.getElementById('town').value = r.address3 || '';
+        applyAndRender();
+      })
+      .catch(() => {
+        const pref=document.getElementById('pref')?.value?.trim();
+        const city=document.getElementById('city')?.value?.trim();
+        const town=document.getElementById('town')?.value?.trim();
+        if(!(pref||city||town)) alert('住所検索に失敗しました（ネットワーク等）');
+      });
+  }
+
+  function buildPlaceText(){
+    const zipRaw = document.getElementById('zip').value.trim();
+    const zip = normalizeZip(zipRaw);
+    const pref = document.getElementById('pref').value.trim();
+    const city = document.getElementById('city').value.trim();
+    const town = document.getElementById('town').value.trim();
+    const addr2 = document.getElementById('addr2').value.trim();
+
+    if(!zip && !pref && !city && !town && !addr2){
+      return '御社ご指定場所';
+    }
+
+    const zipDisp = zip ? `〒${zip.slice(0,3)}-${zip.slice(3)}` : '';
+    const addrLine = `${pref}${city}${town}${addr2}`.trim();
+
+    if(zipDisp && addrLine) return `${zipDisp}\n${addrLine}`;
+    return (zipDisp || addrLine || '御社ご指定場所');
+  }
+
+  function onDGNetBaseChange(){
+    renderDGNetOptions();
+    if(!quoteNoManuallyEdited){
+      document.getElementById('quoteNo').value = generateQuoteNoNow();
+    }
+    applyAndRender();
+  }
+
+  function renderDGNetOptions(){
+    const base = document.getElementById('dgnetBase').value;
+    const panel = document.getElementById('dgnetOptionsPanel');
+    const list = document.getElementById('dgnetOptionsList');
+    
+    if(!base){
+      panel.style.display = 'none';
+      list.innerHTML = '';
+      return;
+    }
+
+    panel.style.display = '';
+    list.innerHTML = '';
+
+    // カテゴリ別にグループ化して表示
+    const categories = ['hardware', 'option', 'standard', 'dtf', 'setup', 'special', 'support'];
+    
+    categories.forEach(cat => {
+      const items = DGNET_SAAS_OPTIONS.filter(o => o.category === cat);
+      if(items.length === 0) return;
+
+      const catDiv = document.createElement('div');
+      catDiv.style.marginTop = '12px';
+      catDiv.innerHTML = `<div style="font-weight:700; font-size:12px; color:#666; margin-bottom:6px;">${DGNET_CATEGORY_NAMES[cat]}</div>`;
+      
+      items.forEach(opt => {
+        const div = document.createElement('div');
+        div.className = 'opt-row off';
+        div.id = `dgnet_row_${opt.id}`;
+
+        let qtyField = '';
+        if(opt.hasQty){
+          qtyField = `<input type="number" id="dgnet_qty_${opt.id}" class="opt-qty" min="1" step="1" value="1" oninput="applyAndRender()" />`;
+        } else {
+          qtyField = '<div style="width:80px;"></div>';
+        }
+
+        div.innerHTML = `
+          <label class="switch">
+            <input type="checkbox" id="dgnet_${opt.id}" onchange="toggleDGNetOption('${opt.id}')">
+            <span class="slider"></span>
+          </label>
+          <div class="opt-label">
+            ${opt.name}
+            <span style="color:#666; font-size:12px; margin-left:6px;">¥${opt.price.toLocaleString()}</span>
+            ${opt.hasQty ? `<span style="color:#666; font-size:11px; margin-left:4px;">/${opt.unitName}</span>` : ''}
+          </div>
+          ${qtyField}
+        `;
+
+        catDiv.appendChild(div);
+      });
+
+      list.appendChild(catDiv);
+    });
+
+    updateDGNetSummary();
+  }
+
+  function toggleDGNetOption(id){
+    const cb = document.getElementById(`dgnet_${id}`);
+    const row = document.getElementById(`dgnet_row_${id}`);
+    if(cb && row){
+      row.className = cb.checked ? 'opt-row on' : 'opt-row off';
+    }
+    updateDGNetSummary();
+    applyAndRender();
+  }
+
+  function updateDGNetSummary(){
+    const sumEl = document.getElementById('dgnetOptionsSummary');
+    if(!sumEl) return;
+
+    const selected = getSelectedDGNetOptions();
+    if(selected.length === 0){
+      sumEl.textContent = '';
+      return;
+    }
+
+    const total = selected.reduce((s, it) => s + (it.unitPrice * it.qty), 0);
+    sumEl.textContent = `${selected.length}項目 / 合計 ¥${total.toLocaleString()}`;
+  }
+
+  function getSelectedDGNetOptions(){
+    const items = [];
+    DGNET_SAAS_OPTIONS.forEach(opt => {
+      const cb = document.getElementById(`dgnet_${opt.id}`);
+      if(!cb || !cb.checked) return;
+      
+      let qty = 1;
+      if(opt.hasQty){
+        const qtyEl = document.getElementById(`dgnet_qty_${opt.id}`);
+        qty = Math.max(1, parseInt(qtyEl?.value || '1', 10));
+      }
+
+      items.push({
+        name: opt.name,
+        qty: qty,
+        unitPrice: opt.price,
+        billingType: opt.billingType,
+        category: opt.category
+      });
+    });
+    return items;
+  }
+
+  // =========================================================
+  // 刺繍ソフト（DG）関連関数
+  // =========================================================
+  
+  function renderDGSelect(){
+    const sel = document.getElementById('dgGrade');
+    if(!sel) return;
+    sel.innerHTML = '<option value="">選択してください</option>';
+    DG_SOFTWARE.forEach(dg => {
+      const opt = document.createElement('option');
+      opt.value = dg.id;
+      opt.textContent = `${dg.name} ￥${dg.price.toLocaleString()}`;
+      sel.appendChild(opt);
+    });
+  }
+
+  function getSelectedDG(){
+    const sel = document.getElementById('dgGrade');
+    const id = sel?.value || '';
+    return DG_SOFTWARE.find(d => d.id === id) || null;
+  }
+
+  function isGradeAtLeast(currentGrade, minGrade){
+    const order = ['WRITER_PLUS','EXPRESS','COMPOSER','CREATOR','ILLUSTRATOR_EXTREME','ARTIST_PLUS','MAESTRO','DG_S'];
+    const ci = order.indexOf(currentGrade);
+    const mi = order.indexOf(minGrade);
+    if(ci < 0 || mi < 0) return false;
+    return ci >= mi;
+  }
+
+  function toggleDGItem(prefix, id){
+    const cb = document.getElementById(`${prefix}_${id}`);
+    const row = document.getElementById(`${prefix}_row_${id}`);
+    if(cb && row){
+      row.className = cb.checked ? 'opt-row on' : 'opt-row off';
+    }
+    updateDGSummary();
+    applyAndRender();
+  }
+
+  function renderDGToggleItem(container, item, prefix){
+    const div = document.createElement('div');
+    div.className = 'opt-row off';
+    div.id = `${prefix}_row_${item.id}`;
+
+    div.innerHTML = `
+      <label class="switch">
+        <input type="checkbox" id="${prefix}_${item.id}" onchange="toggleDGItem('${prefix}','${item.id}')">
+        <span class="slider"></span>
+      </label>
+      <div class="opt-label">
+        ${item.name}
+        <span style="color:#666; font-size:12px; margin-left:6px;">￥${item.price.toLocaleString()}</span>
+      </div>
+      <input type="number" id="${prefix}_${item.id}_qty" class="opt-qty" min="1" step="1" value="1" oninput="applyAndRender()" />
+    `;
+
+    container.appendChild(div);
+  }
+
+  function clearDGSelections(prefix){
+    const list = document.querySelectorAll(`[id^="${prefix}_row_"] input[type="checkbox"]`);
+    list.forEach(cb => { cb.checked = false; });
+    const rows = document.querySelectorAll(`[id^="${prefix}_row_"]`);
+    rows.forEach(r => { r.className = 'opt-row off'; });
+  }
+
+  function renderDGLists(){
+    const dg = getSelectedDG();
+
+    const optPanel = document.getElementById('dgOptPanel');
+    const fontPanel = document.getElementById('dgFontPanel');
+    const lanPanel = document.getElementById('dgLanPanel');
+
+    const optList = document.getElementById('dgOptList');
+    const fontList = document.getElementById('dgFontList');
+    const lanList = document.getElementById('dgLanList');
+    const lessonRow = document.getElementById('dgopt_row_DG_LESSON');
+
+    if(!optList || !fontList || !lanList) return;
+
+    if(!dg){
+      optPanel.style.display = 'none';
+      fontPanel.style.display = 'none';
+      lanPanel.style.display = 'none';
+      optList.innerHTML = '';
+      fontList.innerHTML = '';
+      lanList.innerHTML = '';
+      if(lessonRow) lessonRow.style.display = 'none';
+      return;
+    }
+
+    optPanel.style.display = dg.optionsEnabled ? '' : 'none';
+    if(lessonRow) lessonRow.style.display = dg.optionsEnabled ? '' : 'none';
+    if(!dg.optionsEnabled){
+      const cbL = document.getElementById('dgopt_DG_LESSON');
+      if(cbL) cbL.checked = false;
+      if(lessonRow) lessonRow.className = 'opt-row off';
+    }
+    fontPanel.style.display = dg.fontsEnabled ? '' : 'none';
+
+    optList.innerHTML = '';
+    fontList.innerHTML = '';
+    if(dg.optionsEnabled){
+      DG_OPTIONS.filter(it => isGradeAtLeast(dg.id, it.minGrade)).forEach(it => renderDGToggleItem(optList, it, 'dgopt'));
+    }
+    if(dg.fontsEnabled){
+      DG_FONTS.filter(it => isGradeAtLeast(dg.id, it.minGrade)).forEach(it => renderDGToggleItem(fontList, it, 'dgfont'));
+    }
+
+    clearDGSelections('dgopt');
+    clearDGSelections('dgfont');
+
+    lanPanel.style.display = '';
+    lanList.innerHTML = '';
+    if(dg.lanRule === 'WP'){
+      renderDGToggleItem(lanList, DG_LAN_LICENSES.WP, 'dglan');
+    }else if(dg.lanRule === 'DG'){
+      renderDGToggleItem(lanList, DG_LAN_LICENSES.DG, 'dglan');
+    }
+    clearDGSelections('dglan');
+
+    updateDGSummary();
+  }
+
+  function getSelectedDGItems(prefix, master){
+    const items = [];
+    master.forEach(it => {
+      const cb = document.getElementById(`${prefix}_${it.id}`);
+      if(!cb || !cb.checked) return;
+      const qtyEl = document.getElementById(`${prefix}_${it.id}_qty`);
+      const qty = Math.max(1, parseInt(qtyEl?.value || '1', 10));
+      items.push({ name: it.name, qty, unitPrice: it.price });
+    });
+    return items;
+  }
+
+  function getSelectedDGLan(dg){
+    if(!dg) return [];
+    const lan = (dg.lanRule === 'WP') ? DG_LAN_LICENSES.WP : DG_LAN_LICENSES.DG;
+    const cb = document.getElementById(`dglan_${lan.id}`);
+    if(!cb || !cb.checked) return [];
+    const qtyEl = document.getElementById(`dglan_${lan.id}_qty`);
+    const qty = Math.max(1, parseInt(qtyEl?.value || '1', 10));
+    const name = lan.note ? `${lan.name}（${lan.note}）` : lan.name;
+    return [{ name, qty, unitPrice: lan.price }];
+  }
+
+  function getSelectedDGLessonItem(){
+    const cb = document.getElementById('dgopt_DG_LESSON');
+    if(!cb || !cb.checked) return null;
+    const priceEl = document.getElementById('dgopt_DG_LESSON_price');
+    const qtyEl = document.getElementById('dgopt_DG_LESSON_qty');
+    const unitPrice = Math.max(0, parseInt(priceEl?.value || '0', 10)) || 0;
+    const qty = Math.max(1, parseInt(qtyEl?.value || '1', 10)) || 1;
+    return { name:'DG講習費用', qty, unitPrice };
+  }
+
+  function updateDGSummary(){
+    const dg = getSelectedDG();
+    const optS = document.getElementById('dgOptSummary');
+    const fontS = document.getElementById('dgFontSummary');
+    const lanS = document.getElementById('dgLanSummary');
+    if(!dg){
+      if(optS) optS.textContent = '';
+      if(fontS) fontS.textContent = '';
+      if(lanS) lanS.textContent = '';
+      return;
+    }
+
+    const optItemsBase = dg.optionsEnabled ? getSelectedDGItems('dgopt', DG_OPTIONS.filter(it => isGradeAtLeast(dg.id, it.minGrade))) : [];
+    const lessonItem = dg.optionsEnabled ? getSelectedDGLessonItem() : null;
+    const optItems = lessonItem ? [lessonItem, ...optItemsBase] : optItemsBase;
+    const fontItems = dg.fontsEnabled ? getSelectedDGItems('dgfont', DG_FONTS.filter(it => isGradeAtLeast(dg.id, it.minGrade))) : [];
+    const lanItems = getSelectedDGLan(dg);
+
+    const sum = arr => arr.reduce((s,it)=>s + (it.unitPrice* (Number(it.qty)||0)),0);
+
+    if(optS) optS.textContent = optItems.length ? `${optItems.length}項目 / 合計 ¥${sum(optItems).toLocaleString()}` : '';
+    if(fontS) fontS.textContent = fontItems.length ? `${fontItems.length}項目 / 合計 ¥${sum(fontItems).toLocaleString()}` : '';
+    if(lanS)  lanS.textContent = lanItems.length ? `合計 ¥${sum(lanItems).toLocaleString()}` : '';
+  }
+
+  function initDGSoftwareUI(){
+    renderDGSelect();
+    const sel = document.getElementById('dgGrade');
+    if(sel){
+      sel.addEventListener('change', ()=>{
+        renderDGLists();
+        const q = document.getElementById('quoteNo');
+        if(!quoteNoManuallyEdited){
+          q.value = generateQuoteNoNow();
+        }
+        applyAndRender();
+      });
+    }
+
+    renderDGLists();
+
+    const optPanel = document.getElementById('dgOptPanel');
+    const fontPanel = document.getElementById('dgFontPanel');
+    const lanPanel = document.getElementById('dgLanPanel');
+    if(optPanel) optPanel.open = false;
+    if(fontPanel) fontPanel.open = false;
+    if(lanPanel) lanPanel.open = false;
+  }
+
+  function resetDGSoftwareSection(){
+    const grade = document.getElementById("dgGrade");
+    const qty = document.getElementById("dgQty");
+
+    if(qty) qty.value = "1";
+    if(grade) grade.value = "";
+
+    ["dgopt","dgfont","dglan"].forEach(prefix=>{
+      try{
+        clearDGSelections(prefix);
+      }catch(e){}
+    });
+
+    try{
+      renderDGLists();
+    }catch(e){}
+
+    const lcb = document.getElementById('dgopt_DG_LESSON');
+    const lprice = document.getElementById('dgopt_DG_LESSON_price');
+    const lqty = document.getElementById('dgopt_DG_LESSON_qty');
+    if(lcb) lcb.checked = false;
+    if(lprice) lprice.value = '0';
+    if(lqty) lqty.value = '1';
+    const lrow = document.getElementById('dgopt_row_DG_LESSON');
+    if(lrow) lrow.className = 'opt-row off';
+
+    const optPanel = document.getElementById("dgOptPanel");
+    const fontPanel = document.getElementById("dgFontPanel");
+    const lanPanel = document.getElementById("dgLanPanel");
+    if(optPanel) optPanel.open = false;
+    if(fontPanel) fontPanel.open = false;
+    if(lanPanel) lanPanel.open = false;
+
+    try{
+      updateDGSummary();
+    }catch(e){}
+    
+    applyAndRender();
+  }
+
+  // =========================================================
+  // フリーフォーム明細
+  // =========================================================
+  let freeformLines = [];
+
+  function loadFreeform(){
+    try{
+      const raw = localStorage.getItem('seiken_dgnet_freeform_lines');
+      if(raw){
+        const arr = JSON.parse(raw);
+        if(Array.isArray(arr)) freeformLines = arr;
+      }
+    }catch(e){}
+    if(!Array.isArray(freeformLines)) freeformLines = [];
+  }
+
+  function saveFreeform(){
+    try{ localStorage.setItem('seiken_dgnet_freeform_lines', JSON.stringify(freeformLines)); }catch(e){}
+  }
+
+  function resetFreeform(){
+    if(!confirm('フリーフォーム明細をリセットしますか？')) return;
+    freeformLines = [];
+    saveFreeform();
+    renderFreeform();
+    applyAndRender();
+  }
+
+  function addFreeformProduct(){
+    freeformLines.push({ type:'product', name:'', qty:1, unitPrice:0 });
+    saveFreeform();
+    renderFreeform();
+    applyAndRender();
+  }
+
+  function addFreeformText(){
+    freeformLines.push({ type:'text', name:'' });
+    saveFreeform();
+    renderFreeform();
+    applyAndRender();
+  }
+
+  function removeFreeformLine(i){
+    freeformLines.splice(i,1);
+    saveFreeform();
+    renderFreeform();
+    applyAndRender();
+  }
+
+  function moveFreeformLine(i, dir){
+    const j = i + dir;
+    if(j < 0 || j >= freeformLines.length) return;
+    const tmp = freeformLines[i];
+    freeformLines[i] = freeformLines[j];
+    freeformLines[j] = tmp;
+    saveFreeform();
+    renderFreeform();
+    applyAndRender();
+  }
+
+  function renderFreeform(){
+    const box = document.getElementById('freeformList');
+    if(!box) return;
+    if(!Array.isArray(freeformLines)) freeformLines = [];
+
+    if(freeformLines.length === 0){
+      box.innerHTML = `<div class="muted" style="padding:10px; border:1px dashed #ccc; border-radius:10px;">
+        まだ明細がありません。「商品行を追加」「テキスト行を追加」から追加してください。
+      </div>`;
+      return;
+    }
+
+    const rows = freeformLines.map((ln, i) => {
+      const upDown = `
+        <button class="btn mini" type="button" onclick="moveFreeformLine(${i},-1)">↑</button>
+        <button class="btn mini" type="button" onclick="moveFreeformLine(${i}, 1)">↓</button>
+        <button class="btn mini" type="button" onclick="removeFreeformLine(${i})">削除</button>
+      `;
+
+      if(ln.type === 'product'){
+        const qty = (ln.qty ?? 1);
+        const unit = (ln.unitPrice ?? 0);
+        return `
+          <div class="opt-row off" style="align-items:center; gap:8px;">
+            <div class="opt-label" style="flex:1; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+              <span style="font-weight:700;">商品行</span>
+              <input type="text" value="${escapeHtml(ln.name ?? '')}" placeholder="品名（例：DG16）" style="width:320px;" oninput="onFreeformChangeName(${i}, this.value)" />
+              <span style="font-size:12px; color:#666;">数量</span>
+              <input type="number" value="${qty}" min="0" step="1" style="width:90px;" oninput="onFreeformChangeQty(${i}, this.value)" />
+              <span style="font-size:12px; color:#666;">単価</span>
+              <input type="number" value="${unit}" min="0" step="100" style="width:130px;" oninput="onFreeformChangeUnit(${i}, this.value)" />
+            </div>
+            <div style="display:flex; gap:6px;">${upDown}</div>
+          </div>
+        `;
+      }else{
+        return `
+          <div class="opt-row off" style="align-items:center; gap:8px;">
+            <div class="opt-label" style="flex:1; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+              <span style="font-weight:700;">テキスト行</span>
+              <input type="text" value="${escapeHtml(ln.name ?? '')}" placeholder="説明文（数量・金額は空欄）" style="width:520px;" oninput="onFreeformChangeText(${i}, this.value)" />
+            </div>
+            <div style="display:flex; gap:6px;">${upDown}</div>
+          </div>
+        `;
+      }
+    }).join('');
+
+    box.innerHTML = rows;
+  }
+
+  function onFreeformChangeName(i, v){ freeformLines[i].name = v; saveFreeform(); applyAndRender(); }
+  function onFreeformChangeQty(i, v){
+    const n = parseFloat(v);
+    freeformLines[i].qty = Number.isFinite(n) ? n : 0;
+    saveFreeform();
+    applyAndRender();
+  }
+  function onFreeformChangeUnit(i, v){
+    const n = parseFloat(v);
+    freeformLines[i].unitPrice = Number.isFinite(n) ? n : 0;
+    saveFreeform();
+    applyAndRender();
+  }
+  function onFreeformChangeText(i, v){ freeformLines[i].name = v; saveFreeform(); applyAndRender(); }
+
+  function escapeHtml(str){
+    return String(str)
+      .replaceAll('&','&amp;')
+      .replaceAll('<','&lt;')
+      .replaceAll('>','&gt;')
+      .replaceAll('"','&quot;')
+      .replaceAll("'","&#39;");
+  }
+
+  function buildLineItems(){
+    const lines = [];
+    
+    // 刺繍ソフト（DG）
+    const dg = getSelectedDG();
+    if(dg){
+      const dgQty = Math.max(1, parseInt(document.getElementById('dgQty')?.value || '1', 10));
+      lines.push({
+        name: `刺繍ソフト：${dg.name}`,
+        qty: dgQty,
+        unitPrice: dg.price,
+        displayGroup: 'その他'
+      });
+
+      if(dg.optionsEnabled){
+        const optMaster = DG_OPTIONS.filter(it => isGradeAtLeast(dg.id, it.minGrade));
+        const lesson = getSelectedDGLessonItem();
+        if(lesson){
+          lines.push({
+            name: lesson.name,
+            qty: lesson.qty,
+            unitPrice: lesson.unitPrice,
+            displayGroup: 'その他'
+          });
+        }
+        getSelectedDGItems('dgopt', optMaster).forEach(it => {
+          lines.push({
+            name: it.name,
+            qty: it.qty,
+            unitPrice: it.unitPrice,
+            displayGroup: 'その他'
+          });
+        });
+      }
+      if(dg.fontsEnabled){
+        const fontMaster = DG_FONTS.filter(it => isGradeAtLeast(dg.id, it.minGrade));
+        getSelectedDGItems('dgfont', fontMaster).forEach(it => {
+          lines.push({
+            name: it.name,
+            qty: it.qty,
+            unitPrice: it.unitPrice,
+            displayGroup: 'その他'
+          });
+        });
+      }
+      getSelectedDGLan(dg).forEach(it => {
+        lines.push({
+          name: it.name,
+          qty: it.qty,
+          unitPrice: it.unitPrice,
+          displayGroup: 'その他'
+        });
+      });
+    }
+    
+    // DG.NET.SaaS サービスベース
+    const baseId = document.getElementById('dgnetBase').value;
+    if(baseId){
+      const base = DGNET_SAAS_BASE.find(b => b.id === baseId);
+      if(base){
+        lines.push({
+          name: `${base.name}（年間ジョブ数${base.jobCount.toLocaleString()}）`,
+          qty: 1,
+          unitPrice: base.price,
+          billingType: base.billingType,
+          displayGroup: '年間費用'
+        });
+      }
+    }
+
+    // DG.NET.SaaS オプション
+    const options = getSelectedDGNetOptions();
+    options.forEach(opt => {
+      lines.push({
+        name: opt.name,
+        qty: opt.qty,
+        unitPrice: opt.unitPrice,
+        billingType: opt.billingType,
+        displayGroup: (opt.billingType === 'annual') ? '年間費用' : '初期費用'
+      });
+    });
+
+    // フリーフォーム明細
+    (freeformLines || []).forEach(ln => {
+      if(!ln) return;
+      if(ln.type === 'product'){
+        const name = (ln.name ?? '').trim();
+        const qty = (ln.qty ?? 0);
+        const unit = (ln.unitPrice ?? 0);
+        lines.push({
+          name: name,
+          qty: qty === 0 ? '' : qty,
+          unitPrice: unit === 0 ? '' : unit,
+          displayGroup: 'その他'
+        });
+      }else{
+        const name = (ln.name ?? '').trim();
+        lines.push({ name: name, qty:'', unitPrice:'', displayGroup: 'その他' });
+      }
+    });
+
+    return lines;
+  }
+
+  function yen(n){
+    if(typeof n !== 'number') return '';
+    return n.toLocaleString();
+  }
+
+  function applyAndRender(){
+    const issueDate = document.getElementById('issueDate').value;
+    const toBase = document.getElementById('toBase').value.trim();
+    const toHonorific = document.getElementById('toHonorific').value;
+    const tantou = document.getElementById('tantouSelect').value;
+    const delivery = document.getElementById('delivery').value;
+    const payment = document.getElementById('payment').value;
+    const valid = document.getElementById('valid').value;
+    const notes = document.getElementById('notes').value;
+
+    const seidNo = document.getElementById('seidNo').value.trim();
+    const quoteNo = document.getElementById('quoteNo').value.trim();
+
+    let dateDisp = '';
+    if(issueDate){
+      const d = new Date(issueDate);
+      const era = d.getFullYear() >= 2019 ? '令和' : '平成';
+      const year = d.getFullYear() >= 2019 ? d.getFullYear() - 2018 : d.getFullYear() - 1988;
+      dateDisp = `${era} ${year} 年 ${d.getMonth()+1} 月 ${d.getDate()} 日`;
+    }
+
+    const noDisp = seidNo ? `No.${seidNo}` : (quoteNo || 'No.--MODEL----------');
+
+    document.getElementById('outNo').textContent = noDisp;
+    document.getElementById('outDate').textContent = dateDisp;
+    document.getElementById('outTo').textContent = toBase ? `${toBase}　${toHonorific}` : '株式会社　＿＿＿＿　御中';
+    document.getElementById('outDelivery').textContent = delivery || '受注後 約3カ月';
+    document.getElementById('outPlace').textContent = buildPlaceText();
+    document.getElementById('outPayment').textContent = payment || '納入時 現金一括払い';
+    document.getElementById('outValid').textContent = valid;
+    document.getElementById('outTantou').textContent = `担当者　${tantou || '＿＿＿＿'}`;
+    document.getElementById('outNotes').textContent = notes;
+
+    const lines = buildLineItems();
+    const tbody = document.getElementById('outItems');
+    tbody.innerHTML = '';
+
+    // 年間費用と初期費用に分ける
+    const annualLines = lines.filter(l => l.displayGroup === '年間費用');
+    const setupLines = lines.filter(l => l.displayGroup === '初期費用');
+    const otherLines = lines.filter(l => l.displayGroup === 'その他');
+
+    let annualTotal = 0;
+    let setupTotal = 0;
+
+    // 年間費用セクション
+    if(annualLines.length > 0){
+      const headerTr = document.createElement('tr');
+      headerTr.innerHTML = '<td colspan="4" style="background:#e8e8e8; font-weight:700;">DG.NET SaaS サービスベース</td>';
+      tbody.appendChild(headerTr);
+
+      annualLines.forEach(li => {
+        const tr = document.createElement('tr');
+        const tdDesc = document.createElement('td');
+        tdDesc.className = 'desc';
+        tdDesc.textContent = li.name;
+
+        const tdQty = document.createElement('td');
+        tdQty.className = 'c-qty';
+        tdQty.textContent = li.qty;
+
+        const tdUnit = document.createElement('td');
+        tdUnit.className = 'c-unit';
+
+        const tdAmt = document.createElement('td');
+        tdAmt.className = 'c-amt';
+
+        if(typeof li.unitPrice === 'number'){
+          tdUnit.textContent = yen(li.unitPrice);
+          const qty = (typeof li.qty === 'number') ? li.qty : 1;
+          const amt = li.unitPrice * qty;
+          tdAmt.textContent = yen(amt);
+          annualTotal += amt;
+        } else {
+          tdUnit.textContent = '';
+          tdAmt.textContent = '';
+        }
+
+        tr.appendChild(tdDesc);
+        tr.appendChild(tdQty);
+        tr.appendChild(tdUnit);
+        tr.appendChild(tdAmt);
+        tbody.appendChild(tr);
+      });
+
+      // 年間費用合計
+      const subtotalTr = document.createElement('tr');
+      subtotalTr.className = 'section-subtotal';
+      subtotalTr.innerHTML = `
+        <td colspan="3" style="text-align:right; font-weight:800;">■年間費用合計</td>
+        <td class="c-amt" style="font-weight:800;">${yen(annualTotal)}</td>
+      `;
+      tbody.appendChild(subtotalTr);
+    }
+
+    // 初期費用セクション
+    if(setupLines.length > 0){
+      setupLines.forEach(li => {
+        const tr = document.createElement('tr');
+        const tdDesc = document.createElement('td');
+        tdDesc.className = 'desc';
+        tdDesc.textContent = li.name;
+
+        const tdQty = document.createElement('td');
+        tdQty.className = 'c-qty';
+        tdQty.textContent = li.qty;
+
+        const tdUnit = document.createElement('td');
+        tdUnit.className = 'c-unit';
+
+        const tdAmt = document.createElement('td');
+        tdAmt.className = 'c-amt';
+
+        if(typeof li.unitPrice === 'number'){
+          tdUnit.textContent = yen(li.unitPrice);
+          const qty = (typeof li.qty === 'number') ? li.qty : 1;
+          const amt = li.unitPrice * qty;
+          tdAmt.textContent = yen(amt);
+          setupTotal += amt;
+        } else {
+          tdUnit.textContent = '';
+          tdAmt.textContent = '';
+        }
+
+        tr.appendChild(tdDesc);
+        tr.appendChild(tdQty);
+        tr.appendChild(tdUnit);
+        tr.appendChild(tdAmt);
+        tbody.appendChild(tr);
+      });
+
+      // 初期費用合計
+      const subtotalTr = document.createElement('tr');
+      subtotalTr.className = 'section-subtotal';
+      subtotalTr.innerHTML = `
+        <td colspan="3" style="text-align:right; font-weight:800;">■初期費用合計</td>
+        <td class="c-amt" style="font-weight:800;">${yen(setupTotal)}</td>
+      `;
+      tbody.appendChild(subtotalTr);
+    }
+
+    // その他（フリーフォーム）
+    otherLines.forEach(li => {
+      const tr = document.createElement('tr');
+      const tdDesc = document.createElement('td');
+      tdDesc.className = 'desc';
+      tdDesc.textContent = li.name;
+
+      const tdQty = document.createElement('td');
+      tdQty.className = 'c-qty';
+      tdQty.textContent = li.qty;
+
+      const tdUnit = document.createElement('td');
+      tdUnit.className = 'c-unit';
+
+      const tdAmt = document.createElement('td');
+      tdAmt.className = 'c-amt';
+
+      if(typeof li.unitPrice === 'number'){
+        tdUnit.textContent = yen(li.unitPrice);
+        const qty = (typeof li.qty === 'number') ? li.qty : 1;
+        const amt = li.unitPrice * qty;
+        tdAmt.textContent = yen(amt);
+        setupTotal += amt;
+      } else {
+        tdUnit.textContent = '';
+        tdAmt.textContent = '';
+      }
+
+      tr.appendChild(tdDesc);
+      tr.appendChild(tdQty);
+      tr.appendChild(tdUnit);
+      tr.appendChild(tdAmt);
+      tbody.appendChild(tr);
+    });
+
+    const subtotal = annualTotal + setupTotal;
+    const tax = Math.round(subtotal * TAX_RATE);
+    const total = subtotal + tax;
+
+    const elSub = document.getElementById('outSub');
+    const elTax = document.getElementById('outTax');
+    const elTotal = document.getElementById('outTotal');
+    const elGrand = document.getElementById('outGrand');
+
+    elSub.textContent = yen(subtotal);
+    elTax.textContent = yen(tax);
+    elTotal.textContent = yen(total);
+    elGrand.textContent = `￥${yen(total)} -`;
+  }
+
+  function resetDGNetSection(){
+    document.getElementById('dgnetBase').value = '';
+    renderDGNetOptions();
+    applyAndRender();
+  }
+
+  function resetBasicInfoSection(){
+    const today = new Date();
+    const issueDate = document.getElementById('issueDate');
+    if(issueDate) issueDate.valueAsDate = today;
+
+    const setVal = (id,val)=>{ const el=document.getElementById(id); if(el) el.value = val; };
+
+    setVal('toBase','');
+    setVal('toHonorific','御中');
+    setVal('tantouSelect','');
+    setVal('delivery','受注後 約3カ月');
+    setVal('zip','');
+    setVal('pref','');
+    setVal('city','');
+    setVal('town','');
+    setVal('addr2','');
+    setVal('payment','納入時 現金一括払い');
+    setVal('valid','30日');
+    setVal('notes','');
+
+    applyAndRender();
+  }
+
+  function resetAll(){
+    const today = new Date();
+    document.getElementById('issueDate').valueAsDate = today;
+
+    document.getElementById('toBase').value = '';
+    document.getElementById('toHonorific').value = '御中';
+    document.getElementById('tantouSelect').value = '';
+
+    resetDGSoftwareSection();
+
+    document.getElementById('dgnetBase').value = '';
+    renderDGNetOptions();
+
+    freeformLines = [];
+    saveFreeform();
+    renderFreeform();
+
+    document.getElementById('delivery').value = '受注後 約3カ月';
+    document.getElementById('zip').value = '';
+    document.getElementById('pref').value = '';
+    document.getElementById('city').value = '';
+    document.getElementById('town').value = '';
+    document.getElementById('addr2').value = '';
+    document.getElementById('payment').value = '納入時 現金一括払い';
+    document.getElementById('valid').value = '30日';
+    document.getElementById('notes').value = '';
+
+    quoteNoManuallyEdited = false;
+    document.getElementById('quoteNo').value = '';
+
+    applyAndRender();
+  }
+
+    async function saveAsPDF(){
+    const seidNo = document.getElementById('seidNo').value.trim();
+    if(!seidNo){
+      alert('SEID番号を採番してから保存してください。');
+      return;
+    }
+
+    const customer = document.getElementById('toBase').value.trim() || '顧客名未入力';
+    const quoteNo = document.getElementById('quoteNo').value.trim() || 'DGNET';
+    const safeCustomer = customer.replace(/[\\/:*?"<>|]/g,'-');
+    const fileName = `${seidNo}_${quoteNo}_${safeCustomer}`;
+
+    // テキストPDF（ブラウザのPDF保存）で出力する：
+    // 画像化（html2canvas/jsPDF）は使わず、印刷エンジンに任せることで
+    // 文字選択できるPDFになり、容量も軽くなります。
+    const prevTitle = document.title;
+
+    document.body.classList.add('pdf-mode');
+    document.title = fileName;
+
+    const cleanup = () => {
+      document.title = prevTitle;
+      document.body.classList.remove('pdf-mode');
+    };
+
+    window.addEventListener('afterprint', cleanup, { once:true });
+
+    // ここで「PDFに保存」を選択して保存してください（Windows/Chrome/Edge）
+    window.print();
+  }
+
+  function printQuote(){
+    window.print();
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const today = new Date();
+    document.getElementById('issueDate').valueAsDate = today;
+
+    document.getElementById('delivery').value = '受注後 約3カ月';
+    document.getElementById('payment').value = '納入時 現金一括払い';
+    document.getElementById('valid').value = '30日';
+
+    initDGSoftwareUI();
+    loadFreeform();
+    renderFreeform();
+
+    document.getElementById('quoteNo').value = generateQuoteNoNow();
+
+    applyAndRender();
+  });
+
+</script>
+</body>
+</html>
