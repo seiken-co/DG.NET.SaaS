@@ -1,25 +1,23 @@
 <!DOCTYPE html>
-
 <html lang="ja">
 <head>
 <link href="favicon-32.png" rel="icon" type="image/png"/>
 <link href="icon-180.png" rel="apple-touch-icon"/>
-<!-- PWAっぽく使う場合（任意） -->
 <link href="icon-192.png" rel="icon" sizes="192x192" type="image/png"/>
 <link href="icon-512.png" rel="icon" sizes="512x512" type="image/png"/>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
-<title>精研 見積もり</title>
+<title>精研 DG.NET.SaaS 見積もり</title>
+<script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 <style>
     :root{
       --border:#333;
       --thin:1px;
       --bg:#fafafa;
       --card:#fff;
-
-      /* === 追加：オプション選択の色（淡い） === */
-      --opt-on-bg:#e6f4ea;   /* ON：淡いグリーン */
-      --opt-off-bg:#ffffff; /* OFF：白 */
+      --opt-on-bg:#e6f4ea;
+      --opt-off-bg:#ffffff;
     }
 
     body{
@@ -29,7 +27,6 @@
       background: var(--bg);
     }
 
-    /* ===== 画面：入力UI ===== */
     .app-head{
       display:flex;
       align-items:center;
@@ -102,7 +99,6 @@
     }
     textarea{ min-height: 70px; resize: vertical; }
 
-    /* === UI調整（基本情報・数量入力のはみ出し対策） === */
     #notes{
       width: 100%;
       min-height: 110px;
@@ -111,7 +107,6 @@
       width: 100%;
       flex: 0 0 auto;
     }
-    /* 念のため：数量欄のコンテナ内で入力が伸びすぎないように */
     .row > div[style*="width:130px"] input,
     .row > div[style*="width:120px"] input{
       width: 100%;
@@ -123,13 +118,11 @@
       color: #666;
     }
 
-
-    /* === 入力欄の幅調整（使い勝手改善） === */
     #seidNo{
-      max-width: 280px; /* 見積番号：管理番号と同程度の幅に */
+      max-width: 280px;
     }
     #toBase{
-      min-width: 320px; /* 会社名：長めに確保 */
+      min-width: 320px;
     }
     .opt-head{
       font-weight: 800;
@@ -138,40 +131,34 @@
       color: #111;
     }
 
-    
-    /* ===== オプション見出しの視認性向上 ===== */
     .opt-panel > summary.opt-head{
-      list-style: none;           /* ▼マーカー非表示（Safari対策） */
+      list-style: none;
       cursor: pointer;
       padding: 10px 12px;
       border-radius: 8px;
-      background: #f1f3f5;        /* 淡いグレー（主） */
-      border: 1px solid #d6dbe0;  /* 薄い枠線 */
+      background: #f1f3f5;
+      border: 1px solid #d6dbe0;
       font-weight: 800;
-      margin: 0;                  /* 既存inline styleの意図をCSSでも担保 */
+      margin: 0;
     }
-    /* Safariのデフォルトマーカーを消す */
     .opt-panel > summary.opt-head::-webkit-details-marker{ display:none; }
 
-    /* 開いている時（details[open]） */
     .opt-panel[open] > summary.opt-head{
-      background: #e9edf2;        /* 少しだけ濃く */
+      background: #e9edf2;
       border-color: #cfd6dd;
     }
 
-    /* hover（PC操作時の分かりやすさ） */
     .opt-panel > summary.opt-head:hover{
       background: #e6eaef;
     }
 
-    /* summary 内のサマリー文字 */
     .opt-panel > summary.opt-head .muted{
       margin-left: 6px;
       font-weight: 600;
       color: #555;
     }
 
-.opt-panel{
+    .opt-panel{
       border-top: 1px solid #ddd;
       padding-top: 10px;
     }
@@ -261,7 +248,6 @@
 
     @media print{
       html, body{ margin:0; padding:0; background:#fff; }
-      /* 1ページに収まる場合は1ページ、はみ出たら自動で複数ページ */
       @page{ size: A4; margin: 10mm; }
 
       .no-print{ display:none !important; }
@@ -269,141 +255,128 @@
       .print-area{ margin:0; padding:0; max-width:none; }
       .paper{
         width: 210mm;
-        /* ★重要：固定/最小高さで強制2ページにならないようにする */
         min-height: auto !important;
         height: auto !important;
         padding: 10mm 12mm;
         box-sizing: border-box;
       }
 
-      /* 表の自然改ページ（行の途中で切らない＋ヘッダー繰り返し） */
       table{ page-break-inside: auto; }
       tr{ page-break-inside: avoid; page-break-after: auto; }
       thead{ display: table-header-group; }
       tfoot{ display: table-footer-group; }
-
-      /* マイナス金額は印刷・PDF時も赤字で出力 */
-      .neg{ color:#b00000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
 
-    /* ===== PDF生成用：印刷と同じ改ページ挙動に寄せる ===== */
     body.pdf-mode{
-      margin:0;
-      background:#fff;
+      background: #fff;
+      margin: 0;
+      padding: 0;
     }
-    body.pdf-mode .no-print{ display:none !important; }
-    body.pdf-mode .print-area{ margin:0; padding:0; max-width:none; }
+    body.pdf-mode .no-print{ display: none !important; }
+    body.pdf-mode .print-area{
+      margin: 0;
+      padding: 0;
+      max-width: none;
+    }
     body.pdf-mode .paper{
       width: 210mm;
       min-height: auto !important;
       height: auto !important;
       padding: 10mm 12mm;
       box-sizing: border-box;
-      background:#fff;
+      margin: 0 auto;
+      background: white;
     }
-    body.pdf-mode table{ page-break-inside: auto; }
-    body.pdf-mode tr{ page-break-inside: avoid; page-break-after: auto; }
-    body.pdf-mode thead{ display: table-header-group; }
-    body.pdf-mode tfoot{ display: table-footer-group; }
-    body.pdf-mode .neg{ color:#b00000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 
     .print-area{
-      max-width: 210mm;
-      margin: 0 auto;
+      max-width: 960px;
+      margin: 20px auto;
     }
+
     .paper{
       width: 210mm;
       min-height: 297mm;
       padding: 10mm 12mm;
+      margin: 0 auto;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
       box-sizing: border-box;
-      background:#fff;
+      font-size: 11pt;
+      line-height: 1.5;
+      position: relative;
     }
 
     .header{
-      display:grid;
+      display: grid;
       grid-template-columns: 1fr 1fr 1fr;
-      align-items:center;
+      align-items: center;
       margin-bottom: 4mm;
     }
-    .no{
+    .header .no{
       font-size: 12px;
       font-weight: 700;
     }
-    .title{
-      text-align:center;
+    .header .title{
+      text-align: center;
       font-size: 22px;
       font-weight: 800;
       letter-spacing: 6px;
     }
-    .date{
-      text-align:right;
+    .header .date{
+      text-align: right;
       font-size: 12px;
       font-weight: 700;
     }
 
     .top-block{
       margin-top: 4mm;
-      display:grid;
+      display: grid;
       grid-template-columns: 1fr 68mm;
       gap: 10mm;
-      align-items:start;
+      align-items: start;
     }
-
-    .to{ padding-top: 2mm; }
+    .to{
+      padding-top: 2mm;
+    }
     .to-name{
       font-size: 21px;
       font-weight: 800;
-      display:inline-block;
+      display: inline-block;
       padding-bottom: 2mm;
-      border-bottom: var(--thin) solid var(--border);
+      border-bottom: 1px solid #333;
       min-width: 115mm;
     }
 
     .issuer{
-      border: var(--thin) solid var(--border);
+      border: 1px solid #333;
       padding: 4mm 4mm 3mm 4mm;
       box-sizing: border-box;
       font-size: 11px;
       position: relative;
     }
-    .issuer-text{
-      /* 一体型画像になったため右マージン不要 */
-    }
-
-    .issuer-name{
-      font-weight: 900;
-      font-size: 13.5px;
-      margin-bottom: 1.5mm;
-    }
-    .issuer-logo{
-      display:block;
-      max-width: 60mm;
-      height:auto;
-    }
-    .issuer .rowline{
-      display:flex;
-      gap: 3px;
-      white-space: nowrap;
-      margin: 0.8mm 0;
-    }
-    .issuer .k{ width: 10mm; font-weight:700; }
-    .issuer .v{ flex: 1; white-space: normal; }
-
-    .issuer .tantou{
-      margin-top: 3mm;
-      border-top: 1px dashed #777;
-      padding-top: 2mm;
-      font-weight: 700;
-    }
-
-     .seiken-stamp {
+    .seiken-stamp{
       display: block;
       width: 58mm;
       height: auto;
       margin-bottom: 3mm;
-}
-
-
+    }
+    .issuer-text{
+      /* 会社情報テキスト */
+    }
+    .issuer .rowline{
+      display: flex;
+      gap: 3px;
+      white-space: nowrap;
+      margin: 0.8mm 0;
+    }
+    .issuer .k{
+      width: 10mm;
+      font-weight: 700;
+    }
+    .issuer .v{
+      flex: 1;
+      white-space: normal;
+    }
 
     .greeting{
       margin-top: 4mm;
@@ -413,11 +386,11 @@
 
     .summary{
       margin-top: 2mm;
-      display:grid;
+      display: grid;
       grid-template-columns: 1fr 1fr;
-      align-items:end;
-      border-top: var(--thin) solid var(--border);
-      border-bottom: var(--thin) solid var(--border);
+      align-items: end;
+      border-top: 1px solid #333;
+      border-bottom: 1px solid #333;
       padding: 2.5mm 0;
     }
     .sum-label{
@@ -425,85 +398,111 @@
       font-weight: 900;
     }
     .sum-amount{
-      text-align:right;
+      text-align: right;
       font-size: 22px;
       font-weight: 900;
       letter-spacing: 1px;
       font-variant-numeric: tabular-nums;
     }
 
-    .cond{
+    table.cond{
       margin-top: 4mm;
-      border: var(--thin) solid var(--border);
+      border: 1px solid #333;
       border-collapse: collapse;
-      width:100%;
+      width: 100%;
       font-size: 12px;
     }
-    .cond td{
-      border: var(--thin) solid var(--border);
+    table.cond td{
+      border: 1px solid #333;
       padding: 2.2mm;
       vertical-align: middle;
     }
-    .cond .k{ width: 18mm; font-weight: 800; background:#f7f7f7; }
-    .cond .v{ width: 60mm; }
-    .cond .k2{ width: 22mm; font-weight: 800; background:#f7f7f7; }
+    table.cond .k{
+      width: 18mm;
+      font-weight: 800;
+      background: #f7f7f7;
+    }
+    table.cond .v{
+      width: 60mm;
+    }
+    table.cond .k2{
+      width: 22mm;
+      font-weight: 800;
+      background: #f7f7f7;
+    }
+    #outPlace{
+      white-space: pre-line;
+    }
 
-    /* ★追加：受渡場所だけ改行を効かせる（zip→住所を2行表示するため） */
-    #outPlace{ white-space: pre-line; }
-
-    .items{
+    table.items{
       margin-top: 4mm;
-      border: var(--thin) solid var(--border);
+      border: 1px solid #333;
       border-collapse: collapse;
-      width:100%;
+      width: 100%;
       font-size: 12px;
     }
-    .items th, .items td{
-      border: var(--thin) solid var(--border);
+    table.items th, table.items td{
+      border: 1px solid #333;
       padding: 2.1mm;
     }
-    .items th{
-      background:#f7f7f7;
+    table.items th{
+      background: #f7f7f7;
       font-weight: 900;
     }
-    .items .c-qty{ width: 12mm; text-align:center; }
-    .items .c-unit{ width: 28mm; text-align:right; }
-    .items .c-amt{ width: 28mm; text-align:right; }
-    .items .desc{ width:auto; }
+    table.items .c-qty{
+      width: 12mm;
+      text-align: center;
+    }
+    table.items .c-unit{
+      width: 28mm;
+      text-align: right;
+    }
+    table.items .c-amt{
+      width: 28mm;
+      text-align: right;
+    }
+    table.items .desc{
+      width: auto;
+    }
+
+    .section-subtotal{
+      background: #f0f0f0;
+      font-weight: 800;
+    }
 
     .bottom{
       margin-top: 4mm;
-      display:grid;
+      display: grid;
       grid-template-columns: 1fr 70mm;
       gap: 6mm;
-      align-items:start;
+      align-items: start;
     }
     .note-box{
-      border: var(--thin) solid var(--border);
+      border: 1px solid #333;
       min-height: 36mm;
       padding: 2.5mm;
-      box-sizing:border-box;
+      box-sizing: border-box;
       font-size: 12px;
       white-space: pre-wrap;
     }
-    .totals{
-      border: var(--thin) solid var(--border);
+    table.totals{
+      border: 1px solid #333;
       border-collapse: collapse;
-      width:100%;
+      width: 100%;
       font-size: 12px;
     }
-    .totals td{
-      border: var(--thin) solid var(--border);
+    table.totals td{
+      border: 1px solid #333;
       padding: 2.2mm;
     }
-    .totals .k{
+    table.totals .k{
       width: 18mm;
       font-weight: 800;
-      background:#f7f7f7;
-      text-align:center;
+      background: #f7f7f7;
+      text-align: center;
     }
-    .totals .v{
-      text-align:right;
+    table.totals .v{
+      text-align: right;
       font-variant-numeric: tabular-nums;
     }
 
@@ -522,279 +521,249 @@
     .caution li{
       margin-bottom: 1mm;
     }
-  
-    /* === FREEFORM専用：不要カードを非表示 === */
-    #cardMachine, #cardTFA, #cardGuide{ display:none !important; }
+
+    .terms-section{
+      margin-top: 12px;
+      padding-top: 8px;
+      border-top: 1px solid #999;
+      font-size: 8pt;
+      line-height: 1.4;
+    }
+    .terms-section .terms-head{
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
 </style>
 </head>
 <body>
+
 <div class="no-print">
 <div class="app-head">
-<div>
-<div class="app-title">精研 見積もり（フリーフォーム）</div>
-<div class="app-sub">FREEFORM版 5.0　</div>
-</div>
-</div>
-<div class="toolbar">
-<button class="btn primary" onclick="downloadPDF()">💾 保存（PDF）</button>
-<button class="btn" onclick="printPage()">🖨️ 印刷</button>
-<button class="btn" onclick="regenQuoteNo()">🔄 管理番号 再生成</button>
-<button class="btn" onclick="resetAll()">🗑️ リセット</button>
-</div>
-<div class="no-print">
-<div class="card">
-<div class="section-head"><div class="opt-head">基本情報</div><button class="btn mini" onclick="resetBasicInfoSection()" type="button">この欄をリセット</button></div>
-<div class="grid">
-<div>
-<label>見積番号（SEID）</label>
-<div style="display:flex; gap:8px; align-items:center">
-<input id="seidNo" oninput="applyAndRender()" placeholder="例：SEID-0001" style="flex:1" type="text"/>
-<button class="btn" onclick="SetSEID()" style="white-space:nowrap; font-size:13px; padding:8px 12px" type="button">次の番号</button>
-</div>
-<div class="muted" id="seidPreview" style="margin-top:4px">読み込み中...</div>
-</div>
-<div>
-<label>発行日</label>
-<input id="issueDate" onchange="onIssueDateChange()" type="date"/>
-</div>
-</div>
-<div class="grid" style="margin-top:10px">
-<div>
-<label>管理番号（自動生成）</label>
-<input id="quoteNo" oninput="quoteNoManuallyEdited=true; applyAndRender()" placeholder="例：DH-COMPOSER-20260204-153045" type="text"/>
-<div class="muted" style="margin-top:6px">
-              形式：担当者-モデル名-日付-時刻（DG選択時はグレード名、未選択時はFREEFORM）
-            </div>
-</div>
-<div></div>
-</div>
-<div class="row" style="margin-top:10px">
-<div style="flex:1">
-<label>宛名（会社名等）</label>
-<input id="toBase" oninput="applyAndRender()" placeholder="例：株式会社○○" type="text"/>
-</div>
-<div style="width:120px">
-<label>敬称</label>
-<select id="toHonorific" onchange="applyAndRender()">
-<option value="御中">御中</option>
-<option value="様">様</option>
-</select>
-</div>
-</div>
-<div class="row" style="margin-top:10px">
-<div style="flex:1">
-<label>担当者</label>
-<select id="tantouSelect" onchange="onTantouChange()">
-<option value="">選択してください</option>
-<option value="樋口大">樋口大</option>
-<option value="巽隆充">巽隆充</option>
-<option value="三谷剛史">三谷剛史</option>
-<option value="山崎迅人">山崎迅人</option>
-<option value="與那城昭彦">與那城昭彦</option>
-<option value="八田雅隆">八田雅隆</option>
-</select>
-</div>
-</div>
-<div class="row" style="margin-top:10px">
-<div style="flex:1">
-<label>納期</label>
-<input id="delivery" oninput="applyAndRender()" placeholder="例：受注後 約3カ月" type="text"/>
-</div>
-</div>
-<!-- ★改修：受渡場所＝住所入力UI（郵便番号→自動入力＋番地手入力） -->
-<div class="row" style="margin-top:10px">
-<!-- 郵便番号：幅を都道府県欄と同等（1カラム）にする -->
-<div style="flex:1; min-width:0">
-<label>受渡場所（郵便番号）</label>
-<div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center">
-<input id="zip" placeholder="例：573-0102" style="flex:1; min-width:180px" type="text" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupZip();}"/>
-<button class="btn" onclick="lookupZip()" style="white-space:nowrap; font-size:14px; padding:10px 12px" type="button">住所自動入力</button>
-</div>
-<div class="muted" style="margin-top:4px">※町名まで自動入力。番地・建物名は下で手入力。Enterキーでも検索できます。</div>
-</div>
-<!-- 右側は空けて、郵便番号欄が広がり過ぎないようにする -->
-<div style="flex:1"></div>
-</div>
-<div class="row" style="margin-top:6px">
-<div style="flex:1">
-<label>都道府県</label>
-<input id="pref" oninput="applyAndRender()" placeholder="例：大阪府" type="text"/>
-</div>
-<div style="flex:1">
-<label>市区町村</label>
-<input id="city" oninput="applyAndRender()" placeholder="例：枚方市" type="text"/>
-</div>
-</div>
-<div class="row" style="margin-top:6px">
-<div style="flex:1">
-<label>町名</label>
-<input id="town" oninput="applyAndRender()" placeholder="例：長尾家具町" type="text"/>
-</div>
-<div style="flex:1">
-<label>番地・建物名（手入力）</label>
-<input id="addr2" oninput="applyAndRender()" placeholder="例：3-12-3 ○○ビル2F" type="text"/>
-</div>
-</div>
-<div class="row" style="margin-top:10px">
-<div style="flex:1">
-<label>支払条件</label>
-<input id="payment" oninput="applyAndRender()" placeholder="例：納入時 現金一括払い" type="text"/>
-</div>
-<div style="flex:1">
-<label>見積有効期限</label>
-<input id="valid" oninput="applyAndRender()" placeholder="例：30日" type="text"/>
-</div>
-</div>
-<div class="row" style="margin-top:10px">
-<div style="flex:1">
-<label>備考（自由記入）</label>
-<textarea id="notes" oninput="applyAndRender()" placeholder="例：本見積書の有効期限は30日です。有効期限が切れた場合は、再見積となります。"></textarea>
-</div>
-</div>
+  <div>
+    <div class="app-title">精研 DG.NET.SaaS 見積もり</div>
+    <div class="app-sub">DG.NET.SaaS専用見積作成アプリ</div>
+  </div>
 </div>
 
-<!-- === 明細（フリーフォーム） === -->
-<div class="card" id="cardFreeform">
+<div class="toolbar">
+  <button class="btn primary" type="button" onclick="SetSEID()">次の番号（SEID採番）</button>
+  <button class="btn" type="button" onclick="saveAsPDF()">保存（PDF）</button>
+  <button class="btn" type="button" onclick="printQuote()">印刷</button>
+  <button class="btn" type="button" onclick="resetAll()">全リセット</button>
+</div>
+
+<div class="card">
   <div class="section-head">
-    <div class="opt-head">明細（フリーフォーム）</div>
-    <div style="display:flex; gap:8px; flex-wrap:wrap;">
-      <button class="btn mini" type="button" onclick="addFreeformProduct()">商品行を追加</button>
-      <button class="btn mini" type="button" onclick="addFreeformText()">行を追加する</button>
-      <button class="btn mini" type="button" onclick="resetFreeform()">明細をリセット</button>
+    <div class="opt-head">基本情報</div>
+    <button class="btn mini" type="button" onclick="resetBasicInfoSection()">この欄をリセット</button>
+  </div>
+  <div class="grid">
+    <div>
+      <label>見積番号（お客様向け）</label>
+      <div style="display:flex; gap:8px; align-items:center">
+        <input type="text" id="seidNo" placeholder="例：SEID-0001" style="flex:1" oninput="applyAndRender()" />
+        <button class="btn" type="button" onclick="SetSEID()" style="white-space:nowrap; font-size:13px; padding:8px 12px">次の番号</button>
+      </div>
+      <div class="muted" style="margin-top:4px">SEID採番後に表示</div>
+    </div>
+    <div>
+      <label>発行日</label>
+      <input type="date" id="issueDate" onchange="applyAndRender()" />
+    </div>
+  </div>
+  
+  <div class="grid" style="margin-top:10px">
+    <div>
+      <label>管理番号（自動生成）</label>
+      <input type="text" id="quoteNo" placeholder="例：DH-DGNET-20260211-193503" oninput="quoteNoManuallyEdited=true; applyAndRender()" />
+      <div class="muted" style="margin-top:6px">形式：担当者-DGNET-日付-時刻</div>
+    </div>
+    <div></div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1">
+      <label>宛名（会社名等）</label>
+      <input type="text" id="toBase" placeholder="例：株式会社○○" oninput="applyAndRender()" />
+    </div>
+    <div style="width:120px">
+      <label>敬称</label>
+      <select id="toHonorific" onchange="applyAndRender()">
+        <option value="御中">御中</option>
+        <option value="様">様</option>
+      </select>
     </div>
   </div>
 
-  <div class="muted" style="margin-top:6px; font-size:12px; line-height:1.5">
-    ・「商品行」は数量／単価を入力（合計に加算）　・「行」は品名のみ（数量・単価・金額は空欄）
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1">
+      <label>担当者</label>
+      <select id="tantouSelect" onchange="onTantouChange()">
+        <option value="">選択してください</option>
+        <option value="樋口大">樋口大</option>
+        <option value="巽隆充">巽隆充</option>
+        <option value="三谷剛史">三谷剛史</option>
+        <option value="山崎迅人">山崎迅人</option>
+        <option value="與那城昭彦">與那城昭彦</option>
+        <option value="八田雅隆">八田雅隆</option>
+      </select>
+    </div>
   </div>
 
-  <div id="freeformList" style="margin-top:10px;"></div>
-</div>
-<div class="card" id="cardMachine">
-<div class="section-head"><div class="opt-head">刺繍機本体</div><button class="btn mini" onclick="resetMachineSection()" type="button">本体をリセット</button></div>
-<div class="row">
-<div style="flex:1">
-<label>区分</label>
-<select id="machineCategory" style="width:100%"><option value="sai">彩（SAI）</option>
-<option selected="" value="single">単頭機</option>
-<option value="few">少数頭機</option>
-</select>
-</div>
-<div style="flex:1">
-<label>機種名</label>
-<select id="machineModel" style="width:100%"></select>
-</div>
-<div style="width:140px">
-<label>針数</label>
-<select id="machineNeedles" style="width:100%"></select>
-</div>
-<div style="width:140px">
-<label>頭数</label>
-<select id="machineHeads" style="width:100%"></select>
-</div>
-<div style="width:170px">
-<label>刺繍範囲</label>
-<select id="machineField" style="width:100%"></select>
-</div>
-</div>
-<div class="row" style="margin-top:10px">
-<div style="flex:1">
-<div class="muted">型式（自動）</div>
-<div id="machineFullOut" style="font-weight:800">未選択</div>
-<div class="muted" style="margin-top:4px">見積番号に入れるモデル名：<span id="machineKeyOut">--</span></div>
-</div>
-<div style="width:210px">
-<label>本体単価（税別）</label>
-<input id="baseUnitPrice" min="0" placeholder="価格マスタから自動" step="1000" type="number"/>
-</div>
-<div style="width:130px">
-<label>数量</label>
-<input class="qty" id="baseQty" min="1" oninput="applyAndRender()" step="1" type="number" value="1"/>
-</div>
-</div>
-<div class="opt-head" id="shippingTitle" style="margin-top:14px">運送据付・セットアップ及び講習費用</div>
-<div class="row">
-<div style="flex:1">
-<label>地域</label>
-<select id="region" onchange="applyAndRender()">
-<!-- JavaScriptで動的に選択肢を設定 -->
-</select>
-</div>
-<div style="width:210px">
-<label>その他の場合の金額（税別）</label>
-<input disabled="" id="regionOtherPrice" min="0" oninput="applyAndRender()" placeholder="例：160000" step="1000" type="number"/>
-</div>
-</div>
-<div class="muted" style="margin-top:10px">
-          彩選択時：「彩：」付きの地域を選択してください。単頭機：「単頭機：」付きの地域を選択。少数頭機：「その他（手入力）」を基本とします。
-        </div>
-<details class="opt-panel" style="margin-top:14px">
-<summary class="opt-head" style="margin:0">オプション（数量を全て変更可） <span class="muted" id="optSummary"></span></summary>
-<div class="opt-list" id="optList" style="margin-top:10px"></div>
-</details>
-</div>
-<!-- === 追加：刺繍枠（TFA/TFA2） === -->
-<div class="card" id="cardTFA">
-<div class="section-head"><div class="opt-head">刺繍枠（TFA / TFA2）</div><button class="btn mini" onclick="resetTFASection()" type="button">枠をリセット</button></div>
-<details class="opt-panel" id="tfaPanel">
-<summary class="opt-head" style="margin:0">TFA枠（クリックして開く：機種・刺繍範囲で候補を自動表示） <span class="muted" id="tfaSummary"></span></summary>
-<div class="opt-list" id="tfaList" style="margin-top:10px"></div>
-<div class="muted" style="font-size:12px; margin-top:8px; line-height:1.5">
-            ・価格未設定の枠は「単価」欄に手入力できます（見積時の暫定運用）
-          </div>
-</details>
-</div>
-<!-- === 追加：刺繍ソフト（DG） === -->
-<div class="card" id="cardDG">
-<div class="section-head"><div class="opt-head">刺繍ソフト（DG）</div><button class="btn mini" onclick="resetSoftwareSection()" type="button">刺繍ソフトをリセット</button></div>
-<div class="row">
-<div style="flex:1">
-<label>DGグレード</label>
-<select id="dgGrade" style="width:100%"></select>
-<div class="muted" style="margin-top:6px">※ DG-Sは別枠扱い（オプション／フォントは選択不可）</div>
-</div>
-<div style="width:130px">
-<label>数量</label>
-<input class="qty" id="dgQty" min="1" oninput="applyAndRender()" step="1" type="number" value="1"/>
-</div>
-</div>
-<details class="opt-panel" id="dgOptPanel" style="margin-top:14px">
-<summary class="opt-head" style="margin:0">DGオプション（グレード連動） <span class="muted" id="dgOptSummary"></span></summary>
-<div class="opt-row off" id="dgopt_row_DG_LESSON" style="margin-top:10px">
-<label class="switch">
-<input id="dgopt_DG_LESSON" onchange="toggleDGItem('dgopt','DG_LESSON')" type="checkbox"/>
-<span class="slider"></span>
-</label>
-<div class="opt-label">DG講習費用</div>
-<div style="margin-left:auto; display:flex; gap:10px; align-items:center">
-<span style="color:#666; font-size:12px;">金額</span>
-<input id="dgopt_DG_LESSON_price" min="0" oninput="applyAndRender()" step="1" style="width:130px; text-align:right" type="number" value="0">
-<input class="opt-qty" id="dgopt_DG_LESSON_qty" min="1" oninput="applyAndRender()" step="1" type="number" value="1"/>
-</input></div>
-</div>
-<div class="opt-list" id="dgOptList" style="margin-top:10px"></div>
-</details>
-<details class="opt-panel" id="dgFontPanel" style="margin-top:14px">
-<summary class="opt-head" style="margin:0">DGフォント（グレード連動） <span class="muted" id="dgFontSummary"></span></summary>
-<div class="opt-list" id="dgFontList" style="margin-top:10px"></div>
-</details>
-<details class="opt-panel" id="dgLanPanel" style="margin-top:14px">
-<summary class="opt-head" style="margin:0">LAN刺繍機ライセンス <span class="muted" id="dgLanSummary"></span></summary>
-<div class="opt-list" id="dgLanList" style="margin-top:10px"></div>
-</details>
-</div>
-<div class="card" id="cardGuide">
-<div class="opt-head">スマホ／タブレットで「PDF化 → 送信」する手順（現実的な運用）</div>
-<div class="muted">
-        1) まず「保存」を押す → 印刷画面で「PDFに保存」（これが一番きれいに出ます）<br/>
-        2) iPhone/iPad：プレビュー画面で共有ボタン →「ファイルに保存」または「メール/LINE等へ送信」<br/>
-        3) Android：印刷先を「PDFに保存」→ 共有<br/>
-        ※ ブラウザがSafari/Chromeでも概ね同じです。
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1">
+      <label>納期</label>
+      <input type="text" id="delivery" placeholder="例：受注後 約3カ月" oninput="applyAndRender()" />
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1; min-width:0">
+      <label>受渡場所（郵便番号）</label>
+      <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center">
+        <input type="text" id="zip" placeholder="例：573-0102" style="flex:1; min-width:180px" onkeydown="if(event.key==='Enter'){event.preventDefault();lookupZip();}" oninput="applyAndRender()" />
+        <button class="btn" type="button" onclick="lookupZip()" style="white-space:nowrap; font-size:14px; padding:10px 12px">住所自動入力</button>
       </div>
+      <div class="muted" style="margin-top:4px">※町名まで自動入力。番地・建物名は下で手入力。Enterキーでも検索できます。</div>
+    </div>
+    <div style="flex:1"></div>
+  </div>
+
+  <div class="row" style="margin-top:6px">
+    <div style="flex:1">
+      <label>都道府県</label>
+      <input type="text" id="pref" placeholder="例：大阪府" oninput="applyAndRender()" />
+    </div>
+    <div style="flex:1">
+      <label>市区町村</label>
+      <input type="text" id="city" placeholder="例：枚方市" oninput="applyAndRender()" />
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:6px">
+    <div style="flex:1">
+      <label>町域</label>
+      <input type="text" id="town" placeholder="例：長尾家具町" oninput="applyAndRender()" />
+    </div>
+    <div style="flex:1">
+      <label>番地・建物名（手入力）</label>
+      <input type="text" id="addr2" placeholder="例：3-12-3 ○○ビル2F" oninput="applyAndRender()" />
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1">
+      <label>支払条件</label>
+      <input type="text" id="payment" placeholder="例：納入時 現金一括払い" oninput="applyAndRender()" />
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <div style="flex:1">
+      <label>見積有効期限</label>
+      <input type="text" id="valid" placeholder="例：30日" oninput="applyAndRender()" />
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:10px">
+    <label>備考（御見積書下部に表示）</label>
+    <textarea id="notes" oninput="applyAndRender()"></textarea>
+  </div>
 </div>
+
+<div class="card">
+  <div class="section-head">
+    <div class="opt-head">刺繍ソフト（DG）</div>
+    <button class="btn mini" type="button" onclick="resetDGSoftwareSection()">刺繍ソフトをリセット</button>
+  </div>
+  <div class="row">
+    <div style="flex:1">
+      <label>DGグレード</label>
+      <select id="dgGrade" style="width:100%"></select>
+      <div class="muted" style="margin-top:6px">※ DG-Sは別枠扱い（オプション／フォントは選択不可）</div>
+    </div>
+    <div style="width:130px">
+      <label>数量</label>
+      <input type="number" id="dgQty" class="qty" min="1" step="1" value="1" oninput="applyAndRender()" />
+    </div>
+  </div>
+
+  <details class="opt-panel" id="dgOptPanel" style="margin-top:14px">
+    <summary class="opt-head" style="margin:0">DGオプション（グレード連動） <span class="muted" id="dgOptSummary"></span></summary>
+    <div class="opt-row off" id="dgopt_row_DG_LESSON" style="margin-top:10px">
+      <label class="switch">
+        <input type="checkbox" id="dgopt_DG_LESSON" onchange="toggleDGItem('dgopt','DG_LESSON')" />
+        <span class="slider"></span>
+      </label>
+      <div class="opt-label">DG講習費用</div>
+      <div style="margin-left:auto; display:flex; gap:10px; align-items:center">
+        <span style="color:#666; font-size:12px;">金額</span>
+        <input type="number" id="dgopt_DG_LESSON_price" min="0" step="1" value="0" style="width:130px; text-align:right" oninput="applyAndRender()" />
+        <input type="number" id="dgopt_DG_LESSON_qty" class="opt-qty" min="1" step="1" value="1" oninput="applyAndRender()" />
+      </div>
+    </div>
+    <div class="opt-list" id="dgOptList" style="margin-top:10px"></div>
+  </details>
+
+  <details class="opt-panel" id="dgFontPanel" style="margin-top:14px">
+    <summary class="opt-head" style="margin:0">DGフォント（グレード連動） <span class="muted" id="dgFontSummary"></span></summary>
+    <div class="opt-list" id="dgFontList" style="margin-top:10px"></div>
+  </details>
+
+  <details class="opt-panel" id="dgLanPanel" style="margin-top:14px">
+    <summary class="opt-head" style="margin:0">LAN刺繍機ライセンス <span class="muted" id="dgLanSummary"></span></summary>
+    <div class="opt-list" id="dgLanList" style="margin-top:10px"></div>
+  </details>
 </div>
+
+<div class="card">
+  <div class="section-head">
+    <div class="opt-head">DG.NET.SaaS サービス選択</div>
+    <button class="btn mini" type="button" onclick="resetDGNetSection()">この項目のみリセット</button>
+  </div>
+  
+  <div class="row">
+    <label>サービスベース（いずれか1つを選択）</label>
+    <select id="dgnetBase" onchange="onDGNetBaseChange()">
+      <option value="">選択してください</option>
+      <option value="ONDEMAND">オンデマンド（¥274,000/年、ジョブ数6,000）</option>
+      <option value="PERSO1">パーソナライゼーション1（¥476,000/年、ジョブ数6,000）</option>
+      <option value="PERSO2">パーソナライゼーション2（¥916,000/年、ジョブ数18,000）</option>
+      <option value="PERSO3">パーソナライゼーション3（¥1,512,000/年、ジョブ数48,000）</option>
+      <option value="PERSO4">パーソナライゼーション4（¥2,134,000/年、ジョブ数120,000）</option>
+      <option value="PERSO5">パーソナライゼーション5（¥10,667,000/年、ジョブ数720,000）</option>
+    </select>
+  </div>
+
+  <details class="opt-panel" id="dgnetOptionsPanel" style="display:none;">
+    <summary class="opt-head">
+      オプション選択
+      <span class="muted" id="dgnetOptionsSummary"></span>
+    </summary>
+    <div class="opt-list" id="dgnetOptionsList" style="margin-top:10px;"></div>
+  </details>
+
 </div>
-<!-- 印刷対象 -->
+
+<div class="card">
+  <div class="section-head">
+    <div class="opt-head">フリーフォーム明細（DG16など追加商品）</div>
+    <button class="btn mini" type="button" onclick="resetFreeform()">明細リセット</button>
+  </div>
+  <div id="freeformList"></div>
+  <div style="display:flex; gap:8px; margin-top:10px;">
+    <button class="btn" type="button" onclick="addFreeformProduct()">商品行を追加</button>
+    <button class="btn" type="button" onclick="addFreeformText()">テキスト行を追加</button>
+  </div>
+  <div class="muted" style="margin-top:8px;">
+    ※ DG16などの必須機器や追加商品をここに入力してください<br>
+    ※ 商品行：品名・数量・単価を入力（金額計算あり）<br>
+    ※ テキスト行：説明文のみ（金額計算なし）
+  </div>
+</div>
+
+</div>
+
 <div class="print-area">
 <div class="paper" id="paper">
 <div class="header">
@@ -819,8 +788,6 @@
     <div class="rowline"><div class="k">担当者</div><div class="v" id="outTantou"></div></div>
   </div>
 </div>
-
-
 </div>
 <div class="greeting">下記の通り、御見積申し上げます。</div>
 <div class="summary">
@@ -860,47 +827,200 @@
 <div class="head">【注意事項】</div>
 <ul>
 <li>製品保証期間は納入日より1年間です。</li>
-
 </ul>
 </div>
+
+<div class="terms-section">
+<div class="terms-head">■規約と条件</div>
+<div>刺繡テンプレートの作成には、DGのエレメント機能が必要です。</div>
+<div>初期セットアップ料金には、プリントおよび彫刻用に1つのPVエディターが含まれます。</div>
+<div>追加料金は初期契約の終了期限に合わせて請求し、再契約する場合には全額請求されます。</div>
+<div>（例えば、10万円のオプションを6か月後に購入した場合、残り6か月分の5万円を請求し、再契約する際には1年分の10万円が請求されます。）</div>
+<div class="terms-head" style="margin-top:8px;">■ジョブの定義</div>
+<div>ジョブとは、オーダー内での固有のパーソナル化のことをいいます。</div>
+<div>注文内の同じ製品SKUでの同じパーソナライズの複数生産は、1つのジョブと見なされます。</div>
+<div>SKUとは、単一のサイズ、場所、または色からなる特定の製品のことです。</div>
+<div class="terms-head" style="margin-top:8px;">■サービス容量を超えた場合</div>
+<div>サービス容量を超過した場合、契約期間は自動的にリセットされ、新たに契約期間分が課金されます。</div>
+<div class="terms-head" style="margin-top:8px;">■サポート</div>
+<div>必要に応じて日割りによる出張、修理サービスがあります。年間契約費に営業時間内のサポートが含まれております。</div>
+<div>インシデントの定義　インシデントとは、単一サポートの問題とそれを解決するための労力として定義されています。単一サポートの問題とは、</div>
+<div>それ以上、下位の問題に分ける事が出来ないという意味です。仮に問題が1つではなく、下位の問題とともに構成されていれば、</div>
+<div>それぞれ個別のインシデントと見なします。　サポート時間についてはSaaS契約に記載されています。</div>
+</div>
+
 </div>
 </div>
+
 <script>
-  // === FREEFORMモード（機械本体・枠は使用しない） ===
-  const FREEFORM_MODE = true;
+  const DGNET_MODE = true;
+  const TAX_RATE = 0.10;
+
+ // 刺繍ソフト（DG）価格・選択ルール（A案：DG-Sは別枠＝オプション/フォント不可）
+  // =========================================================
+  const DG_SOFTWARE = [
+    { id:'WRITER_PLUS', name:'Writer Plus（彩 付属）', price:0, optionsEnabled:false, fontsEnabled:false, lanRule:'WP' },
+    { id:'EXPRESS', name:'DG17 EXPRESS', price:175000, optionsEnabled:false, fontsEnabled:false, lanRule:'DG' },
+    { id:'COMPOSER', name:'DG17 COMPOSER', price:382000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
+    { id:'CREATOR', name:'DG17 CREATOR', price:651000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
+    { id:'ILLUSTRATOR_EXTREME', name:'DG17 ILLUSTRATOR EXTREME', price:777000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
+    { id:'ARTIST_PLUS', name:'DG17 ARTIST PLUS', price:1029000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
+    { id:'MAESTRO', name:'DG17 MAESTRO', price:1406000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
+    { id:'DG_S', name:'DG-S', price:302000, optionsEnabled:false, fontsEnabled:false, lanRule:'DG' }
+  ];
+
+  // minGrade は「このグレード以上」で選択可（DG-Sは判定対象外なので入れない）
+  const DG_OPTIONS = [
+    { id:'ELEMENT', name:'エレメント', price:73000, minGrade:'CREATOR' },
+    { id:'EVERYTHING_SEQUIN_PACK', name:'エブリシングシークインパック', price:399000, minGrade:'CREATOR' },
+    { id:'BEADS_PACK', name:'ビーズパック', price:585000, minGrade:'CREATOR' },
+    { id:'PHOTO_CREATOR', name:'フォトクリエーター', price:157000, minGrade:'ILLUSTRATOR_EXTREME' },
+    { id:'CHENILLE', name:'シェニール', price:204000, minGrade:'CREATOR' },
+    { id:'DIRECT_MACHINE_HOLDER', name:'ダイレクトマシンホルダー', price:51000, minGrade:'COMPOSER' },
+    { id:'CHENILLE_TUCKING', name:'シェニールタッキング', price:78000, minGrade:'COMPOSER' },
+    { id:'HEAD_GROUP', name:'ヘッドグループ（刺繍機ヘッド選択）', price:178000, minGrade:'ILLUSTRATOR_EXTREME' }
+  ];
+
+  const DG_FONTS = [
+    { id:'FONT_1', name:'フォント1（日本語以外）', price:46000, minGrade:'COMPOSER' },
+    { id:'SEQUIN_FONT_PACK', name:'シークインフォントパック', price:92000, minGrade:'COMPOSER' },
+    { id:'MONOGRAM_FONT_PACK', name:'モノグラムフォントパック', price:92000, minGrade:'COMPOSER' },
+    { id:'PLATINUM_FONT_PACK', name:'プラチナムフォントパック', price:237000, minGrade:'COMPOSER' },
+    { id:'FONT_MEDLEY', name:'フォントメドレー', price:92000, minGrade:'COMPOSER' },
+    { id:'SYMPHONY_1_FONT_PACK', name:'シンフォニー1 フォントパック', price:55000, minGrade:'COMPOSER' },
+    { id:'NONAKA_FONT', name:'野中フォント', price:72000, minGrade:'COMPOSER' },
+    { id:'TAJIMA_JP_FONT_DGA', name:'タジマ日本語フォント：DG:A', price:95000, minGrade:'COMPOSER' },
+    { id:'TAJIMA_JP_FONT_DGB', name:'タジマ日本語フォント：DG:B', price:95000, minGrade:'COMPOSER' },
+    { id:'TAJIMA_JP_FONT_DGC', name:'タジマ日本語フォント：DG:C（A+Bセット）', price:150000, minGrade:'COMPOSER' },
+    { id:'TAJIMA_JP_FONT_PACK', name:'タジマ日本語フォントパック（現標準フォント）', price:90000, minGrade:'COMPOSER' }
+  ];
+
+  const DG_LAN_LICENSES = {
+    DG: { id:'LAN_DG', name:'LAN刺繍機ライセンス（DG）', price:47000, note:'2〜10台目までの接続（追加）' },
+    WP: { id:'LAN_WRITER_PLUS', name:'LAN刺繍機ライセンス（ライタープラス）', price:22000, note:'2台目〜5台目の接続（追加）' }
+  };
 
 
-  // =========================================================
-  // 有効期限計算関数（発行日 + 有効期限日数 → YYYY-MM-DD）
-  // =========================================================
+  // DG.NET.SaaS 商品マスタ
+  const DGNET_SAAS_BASE = [
+    { id:'ONDEMAND', name:'オンデマンド', price:274000, billingType:'annual', jobCount:6000 },
+    { id:'PERSO1', name:'パーソナライゼーション1', price:476000, billingType:'annual', jobCount:6000 },
+    { id:'PERSO2', name:'パーソナライゼーション2', price:916000, billingType:'annual', jobCount:18000 },
+    { id:'PERSO3', name:'パーソナライゼーション3', price:1512000, billingType:'annual', jobCount:48000 },
+    { id:'PERSO4', name:'パーソナライゼーション4', price:2134000, billingType:'annual', jobCount:120000 },
+    { id:'PERSO5', name:'パーソナライゼーション5', price:10667000, billingType:'annual', jobCount:720000 }
+  ];
+
+  const DGNET_SAAS_OPTIONS = [
+    // ハード
+    { id:'CONN', name:'出力デバイスの接続', price:30000, billingType:'annual', category:'hardware', hasQty:true, unitName:'台' },
+    
+    // オプション
+    { id:'MD', name:'モバイルデザイナー', price:207000, billingType:'annual', category:'option' },
+    { id:'ES', name:'追加EC店舗', price:42000, billingType:'annual', category:'option', hasQty:true, unitName:'店舗' },
+    
+    // スタンダードオプション
+    { id:'PA', name:'ワッペン', price:275000, billingType:'annual', category:'standard' },
+    { id:'NST', name:'標準ホスティング', price:275000, billingType:'annual', category:'standard', hasQty:true, unitName:'メディア' },
+    { id:'COLOR', name:'カラーリール API', price:403000, billingType:'annual', category:'standard' },
+    { id:'LBR', name:'レーザーブリッジ', price:403000, billingType:'annual', category:'standard' },
+    { id:'LOGO', name:'ロゴロッカー', price:275000, billingType:'annual', category:'standard' },
+    
+    // DTF
+    { id:'DTFB', name:'DTFビジネス', price:323000, billingType:'annual', category:'dtf' },
+    { id:'DTFP', name:'DTFプロフェッショナル', price:1134000, billingType:'annual', category:'dtf' },
+    
+    // 初期費用
+    { id:'SETA', name:'初期セットアップ（メディア、拠点、デザイナー、店舗を各1つ含む）', price:321000, billingType:'setup', category:'setup' },
+    { id:'SU2', name:'二次セットアップ（追加メディア、拠点、デザイナー、店舗もしくはECテーマに変更）', price:107000, billingType:'setup', category:'setup' },
+    
+    // スペシャル
+    { id:'PVEA', name:'追加PVエディター', price:67000, billingType:'setup', category:'special', hasQty:true, unitName:'個' },
+    { id:'CDEV', name:'カスタム開発', price:210000, billingType:'setup', category:'special', hasQty:true, unitName:'日' },
+    { id:'CFC', name:'カスタムフォント作成', price:162000, billingType:'setup', category:'special', hasQty:true, unitName:'フォント' },
+    
+    // サポート
+    { id:'SUP', name:'営業時間外サポート', price:101000, billingType:'incident', category:'support', hasQty:true, unitName:'インシデント' }
+  ];
+
+  // カテゴリ別表示名
+  const DGNET_CATEGORY_NAMES = {
+    'hardware': 'ハード',
+    'option': 'オプション',
+    'standard': 'スタンダードオプション',
+    'dtf': 'DTF',
+    'setup': '初期費用',
+    'special': 'スペシャル',
+    'support': 'サポート'
+  };
+
+  // SEID採番API設定
+  const QUOTE_CREATE_API_URL = window.SEID_API_ENDPOINT || 'https://daihiguchi.art/estimate-system/api/quote/create.php';
+  const QUOTE_API_KEY = window.SEID_API_KEY || 'seiken-estimate_2026_key_01271315';
+
+  // 担当者コードマップ
+  const TANTOU_CODE_MAP = {
+    '樋口大': 'DH',
+    '巽隆充': 'TT',
+    '三谷剛史': 'TM',
+    '山崎迅人': 'HY',
+    '與那城昭彦': 'AY',
+    '八田雅隆': 'MH'
+  };
+
+  let quoteNoManuallyEdited = false;
+  let SEID_CREATING = false;
+
+  function pad2(n){ return String(n).padStart(2,'0'); }
+
+  function yyyymmddNow(d){
+    return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}`;
+  }
+  function hhmmssNow(d){
+    return `${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
+  }
+
+  function getTantouCode(){
+    const name = document.getElementById('tantouSelect').value || '';
+    return TANTOU_CODE_MAP[name] || '--';
+  }
+
+  function generateQuoteNoNow(){
+    const d = new Date();
+    const tantou = getTantouCode();
+    const model = 'DGNET';
+    return `${tantou}-${model}-${yyyymmddNow(d)}-${hhmmssNow(d)}`;
+  }
+
+  function regenQuoteNo(){
+    const q = document.getElementById('quoteNo');
+    q.value = generateQuoteNoNow();
+    quoteNoManuallyEdited = false;
+    applyAndRender();
+  }
+
+  function onTantouChange(){
+    const q = document.getElementById('quoteNo');
+    if(!quoteNoManuallyEdited){
+      q.value = generateQuoteNoNow();
+    }
+    applyAndRender();
+  }
+
   function calculateValidUntil() {
     const issueDate = document.getElementById('issueDate').value;
     const validText = document.getElementById('valid').value.trim() || '30日';
-    
-    // 「30日」→ 30 に変換（数値以外を削除）
     const validDays = parseInt(validText.replace(/[^0-9]/g, '')) || 30;
-    
     if (!issueDate) return '';
-    
     const d = new Date(issueDate);
     d.setDate(d.getDate() + validDays);
-    
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
-    
     return `${yyyy}-${mm}-${dd}`;
   }
 
-   // =========================================================
-  // SEID採番（Xserver create.php / SQLite連番）
-  // =========================================================
-    // SEID採番API設定（index4.htm と同じ設計）
-  // window.SEID_API_ENDPOINT / window.SEID_API_KEY があればそれを優先
-  const QUOTE_CREATE_API_URL = window.SEID_API_ENDPOINT || 'https://daihiguchi.art/estimate-system/api/quote/create.php';
-  const QUOTE_API_KEY = window.SEID_API_KEY || 'seiken-estimate_2026_key_01271315';
   async function createSeidOnBoot(force=false){
-    // 二重採番防止（リロードで毎回採番したい場合は、この2行を消してOK）
     if(!force && sessionStorage.getItem('SEID_ALREADY_CREATED') === '1') return;
 
     const issueDateEl = document.getElementById('issueDate');
@@ -917,28 +1037,11 @@
     const staff = (document.getElementById('tantouSelect')?.value || '').trim();
     const customer = (document.getElementById('toBase')?.value || '').trim();
 
-    // create.php が staff と customer を必須にしているため、未入力なら採番しない
-if (!staff || !customer) {
-console.log('SEID not created yet:', {
-  staff: {
-    value: document.getElementById('tantouSelect')?.value,
-    type: typeof document.getElementById('tantouSelect')?.value,
-    length: document.getElementById('tantouSelect')?.value?.length
-  },
-  customer: {
-    value: document.getElementById('toBase')?.value,
-    type: typeof document.getElementById('toBase')?.value,
-    length: document.getElementById('toBase')?.value?.length
-  }
-});
+    if (!staff || !customer) {
+      console.log('SEID not created yet: staff or customer missing');
+      return;
+    }
 
-
-  return;
-}
-
-
-    // ★採番時にDBへ保存する最低限の情報（index4.htm と同等）
-    // 有効期限：発行日 + 画面入力値
     const expiresYmd = calculateValidUntil() || (() => {
       const d2 = new Date();
       d2.setDate(d2.getDate() + 30);
@@ -951,21 +1054,15 @@ console.log('SEID not created yet:', {
     const payload = {
       api_key: QUOTE_API_KEY,
       expires_at: expiresYmd,
-
       staff: staff || '未設定',
       customer: customer || '顧客名未入力',
-
-      // FREEFORMでは機械は空でOK（DBの同一スキーマに合わせるための枠だけ残す）
       machine: '',
-      product_code: 'FREEFORM',
+      product_code: 'DGNET',
       total: 0,
-
-      // 管理番号（画面の管理番号）を保持
       admin_quote_no: (document.getElementById('quoteNo')?.value || '').trim(),
-
       data: {
         created_at: new Date().toISOString(),
-        source: 'freeform',
+        source: 'dgnet-saas',
         issued_at: issueDate
       }
     };
@@ -989,7 +1086,6 @@ console.log('SEID not created yet:', {
       return;
     }
 
-    // create.php の返却キー差分に耐える
     const seid =
       (data && (data.seid || data.quote_no || data.quoteNo || data.quote_number)) ||
       (data && data.quote && (data.quote.seid || data.quote.quote_no)) ||
@@ -1001,23 +1097,16 @@ console.log('SEID not created yet:', {
       return;
     }
 
-    // ★フリーフォームの「見積番号（お客様向け）」に反映
     const seidEl = document.getElementById('seidNo');
     if(seidEl) seidEl.value = seid;
 
-    // 帳票反映
     if(typeof applyAndRender === 'function') applyAndRender();
 
     sessionStorage.setItem('SEID_ALREADY_CREATED', '1');
     console.log('SEID created on boot:', seid);
   }
 
-  // ★多重クリック防止フラグ
-  let SEID_CREATING = false;
-
-  // 「次の番号」ボタン:SEID採番(初回 or 再採番)
   async function SetSEID(){
-    // 通信中チェック
     if(SEID_CREATING) {
       console.log('SEID採番処理中です。しばらくお待ちください。');
       return;
@@ -1026,77 +1115,15 @@ console.log('SEID not created yet:', {
     const ok = confirm('SEID番号を採番します。よろしいですか?(番号が進みます)');
     if(!ok) return;
 
-    SEID_CREATING = true; // フラグセット
+    SEID_CREATING = true;
     try {
       sessionStorage.removeItem('SEID_ALREADY_CREATED');
       await createSeidOnBoot(true);
     } finally {
-      SEID_CREATING = false; // 必ず解除
+      SEID_CREATING = false;
     }
   }
 
-
-  // =========================================================
-  // =========================================================
-  // 管理番号：担当者イニシャル - モデル名 - YYYYMMDD-HHMMSS
-  // 例）DH-COMPOSER-20260204-153045
-  // FREEFORM版：DG選択時はグレード名、未選択時はFREEFORM
-  // =========================================================
-  const DEFAULT_MACHINE_CODE = 'MODEL';
-
-  // 担当者 → イニシャル（運用で固定推奨）
-  const TANTOU_CODE_MAP = {
-    '樋口大': 'DH',
-    '巽隆充': 'TT',
-    '三谷剛史': 'TM',
-    '山崎迅人': 'HY',
-    '與那城昭彦': 'AY',
-    '八田雅隆': 'MH'
-  };
-
-  // 見積番号を手動編集したら、以後は担当者変更で上書きしない
-  let quoteNoManuallyEdited = false;
-
-  function pad2(n){ return String(n).padStart(2,'0'); }
-
-  function yyyymmddNow(d){
-    return `${d.getFullYear()}${pad2(d.getMonth()+1)}${pad2(d.getDate())}`;
-  }
-  function hhmmssNow(d){
-    return `${pad2(d.getHours())}${pad2(d.getMinutes())}${pad2(d.getSeconds())}`;
-  }
-
-  function getTantouCode(){
-    const name = document.getElementById('tantouSelect').value || '';
-    return TANTOU_CODE_MAP[name] || '--';
-  }
-
-  function generateQuoteNoNow(){
-    const d = new Date();
-    const tantou = getTantouCode();
-    const model = getMachineCodeForQuoteNo();
-    return `${tantou}-${model}-${yyyymmddNow(d)}-${hhmmssNow(d)}`;
-  }
-
-  function regenQuoteNo(){
-    const q = document.getElementById('quoteNo');
-    q.value = generateQuoteNoNow();
-    quoteNoManuallyEdited = false; // 再生成したら「自動」に戻す
-    applyAndRender();
-  }
-
-  // 担当者変更時：見積番号が未編集なら自動更新
-  function onTantouChange(){
-    const q = document.getElementById('quoteNo');
-    if(!quoteNoManuallyEdited){
-      q.value = generateQuoteNoNow();
-    }
-    applyAndRender();
-  }
-
-  // =========================================================
-  // ★追加：zipcloud（郵便番号→住所自動入力）
-  // =========================================================
   function normalizeZip(zip){
     return (zip || '').trim().replace(/[^\d]/g, '');
   }
@@ -1143,7 +1170,6 @@ console.log('SEID not created yet:', {
     const town = document.getElementById('town').value.trim();
     const addr2 = document.getElementById('addr2').value.trim();
 
-    // 何も入ってなければ従来どおり
     if(!zip && !pref && !city && !town && !addr2){
       return '御社ご指定場所';
     }
@@ -1155,1822 +1181,178 @@ console.log('SEID not created yet:', {
     return (zipDisp || addrLine || '御社ご指定場所');
   }
 
-  // =========================================================
-  // ★追加：ヘッダーの「保存」「印刷」
-  // 保存：印刷ダイアログを開く（PDF保存前提）＋ title を一時的に見積番号入りへ
-  // 印刷：通常印刷
-  // =========================================================
-  function makeSafeFilePart(str){
-    return (str || '')
-      .replace(/\s+/g,' ')
-      .trim()
-      .replace(/[\\/:*?"<>|]/g,'-')
-      .slice(0, 50);
-  }
-
-  // ★追加：保存ファイル名（見積番号＋日時＋顧客名）
-  function getCustomerNameForFile(){
-    const base = (document.getElementById('toBase').value || '').trim();
-    if(!base) return '';
-    // 末尾の敬称が混ざっている場合に備えて除去
-    return base.replace(/(御中|様)\s*$/,'').trim();
-  }
-
-  function buildSaveFileName(){
-    const seid = (document.getElementById('seidNo').value || '').trim();
-    const quote = (document.getElementById('quoteNo').value || '').trim();
-    const customer = getCustomerNameForFile();
-    
-    // SEID番号がある場合：SEID_管理番号_顧客名
-    // SEID番号がない場合：管理番号_顧客名（従来通り）
-    let parts = [];
-    if(seid){
-      parts.push(seid);
-      if(quote) parts.push(quote);
-      if(customer) parts.push(customer);
-    }else{
-      const quoteOrDefault = quote || `--${getMachineCodeForQuoteNo() || DEFAULT_MACHINE_CODE}----------`;
-      parts.push(quoteOrDefault);
-      if(customer) parts.push(customer);
+  function onDGNetBaseChange(){
+    renderDGNetOptions();
+    if(!quoteNoManuallyEdited){
+      document.getElementById('quoteNo').value = generateQuoteNoNow();
     }
-    
-    return makeSafeFilePart(parts.join('_'));
-  }
-
-
-  
-  async function downloadPDF(){
-    // テキストPDF（ブラウザのPDF保存）で出力する：
-    // 画像化（html2canvas/jsPDF）は使わず、印刷エンジンに任せることで
-    // 文字選択できるPDFになり、容量も軽くなります。
-    
     applyAndRender();
+  }
 
-    const fileName = buildSaveFileName();
-    const prevTitle = document.title;
-
-    document.body.classList.add('pdf-mode');
-    document.title = fileName;
-
-    const cleanup = () => {
-      document.title = prevTitle;
-      document.body.classList.remove('pdf-mode');
-    };
-
-    window.addEventListener('afterprint', cleanup, { once:true });
-
-    // ここで「PDFに保存」を選択して保存してください（Windows/Chrome/Edge）
-    window.print();
+  function renderDGNetOptions(){
+    const base = document.getElementById('dgnetBase').value;
+    const panel = document.getElementById('dgnetOptionsPanel');
+    const list = document.getElementById('dgnetOptionsList');
     
-    // 見積作成通知をサーバーに送信（印刷ダイアログ起動後、バックグラウンドで実行）
-    try {
-      const filename = fileName + '.pdf';
-      const estimateNumber = (document.getElementById('quoteNo').value || '').trim();
-      const customerName = getCustomerNameForFile();
-      const validUntil = calculateValidUntil();
-      const createdBy = document.getElementById('tantouSelect').value || '';
-      
-      const notifyData = {
-          api_key: 'seiken-estimate_2026_key_01271315',
-          estimate_no: estimateNumber,
-          customer: customerName,
-          valid_until: validUntil,
-          created_by: createdBy,
-          pdf_name: filename
-      };
-
-      fetch('https://daihiguchi.art/notify.php', {
-          method: 'POST',
-          headers: {
-              'Content-Type': 'application/json',
-              'X-API-KEY': 'seiken-estimate_2026_key_01271315'
-          },
-          body: JSON.stringify(notifyData)
-      })
-      .then(response => response.json())
-      .then(data => {
-          console.log('✅ 見積作成通知送信成功:', data);
-          if (data.ok && data.mail_sent) {
-              console.log('📧 メール送信成功:', data.mail_to);
-          }
-      })
-      .catch(error => {
-          console.error('❌ 通知送信エラー:', error);
-      });
-    } catch(error) {
-      console.error('❌ 通知処理エラー:', error);
-    }
-  }
-
-
-  function printPage(){
-    applyAndRender();
-    window.print();
-  }
-
-  // ====== 機種選択ロジック ======
-
-  // 単頭機マスタ（シリーズ固定＋針数のみ選択。頭数=01、範囲=360×500 固定）
-  const SINGLE_SERIES = [
-    { id:'TMEZ-S',  label:'TMEZ-S',  needles:[9,12,15], displayName:'タジマ 1頭式刺繍機 i-TM/DCP 搭載モデル' },
-    { id:'TMBR2-S', label:'TMBR2-S', needles:[6,12,15,18], displayName:'タジマ 1頭式刺繍機 DCP搭載モデル' },
-    { id:'TMBP2-S', label:'TMBP2-S', needles:[6,12,15], displayName:'タジマ 1頭式刺繍機 標準モデル' },
-  ];
-
-  // 彩（SAI）マスタ（固定）
-  const SAI_MODELS = [
-    { id:'MDP-S0801C', label:'MDP-S0801C', displayName:'TAJIMA彩 （SAI） タジマ1頭式8色刺繍機' , full:'MDP-S0801C(200x300)S' }
-  ];
-
-  // 彩（SAI）オプション（価格表PDFに基づく）
-  const SAI_OPTIONS = [
-    { id:'sai_stand', name:'脚スタンド：MDP-SC', price:137000 },
-    { id:'sai_wide_cap', name:'ワイド帽子枠一式：MDP-SC', price:99000 },
-    { id:'sai_tfa_90', name:'袋物枠：TFA：φ90', price:5000 },
-    { id:'sai_tfa_120', name:'袋物枠：TFA：φ120', price:5000 },
-    { id:'sai_tfa_150', name:'袋物枠：TFA：φ150', price:5000 },
-    { id:'sai_tfa_180', name:'袋物枠：TFA：φ180', price:5000 },
-    { id:'sai_pocket_clamp', name:'ポケット用クランプ枠：65×100', price:22000 },
-    { id:'sai_sock_frame', name:'靴下枠：袋物枠用', price:18000 },
-    { id:'sai_sock_gauge', name:'靴下枠用ゲージ：単品', price:5130 },
-    { id:'sai_m_frame_kit', name:'Mフレームスターターキッド：彩', price:71000 },
-    { id:'sai_m_clip_50', name:'Mクリップ：50', price:4000 },
-    { id:'sai_m_clip_100', name:'Mクリップ：100', price:6000 },
-    { id:'sai_gauge_set_tgh3', name:'ゲージセット：TGH3', price:30000 },
-    { id:'sai_shoe_frame_set', name:'靴枠セット', price:57000 },
-    { id:'sai_hoopmaster_55', name:'フープマスター丸枠：5.5', price:57000 },
-    { id:'sai_bobbin_winder_small', name:'下糸巻装置：小型', price:28000 },
-    { id:'sai_bag_frame_100', name:'袋物枠100×100（標準装備タイプ）', price:7000 },
-    { id:'sai_bag_frame_200_300', name:'袋物枠200×300（標準装備タイプ）', price:7000 },
-    { id:'sai_lan_license', name:'LAN刺繍機接続ライセンス 追加2台目以降', price:18000 },
-    { id:'sai_writerplus_font_a', name:'Writerplusタジマ日本語フォント セットA', price:68000 },
-    { id:'sai_writerplus_font_b', name:'Writerplusタジマ日本語フォント セットB', price:68000 },
-    { id:'sai_writerplus_font_c', name:'Writerplusタジマ日本語フォント セットC', price:123000 },
-  ];
-
-
-  // 少数頭機マスタ（モデル＋針数＋頭数＋範囲）
-  const FEW_MODELS = [
-    { 
-      id:'TMEZ-K', 
-      label:'TMEZ-KC', 
-      needles:[9,12,15], 
-      heads:[2,4,6,8], 
-      fields:['450x360','450x500'], 
-      displayName:'タジマ刺繍機 TMEZ-KC （i-TM/DCP 搭載モデル）',
-      // 2頭機は450x500のみ
-      fieldsByHeads: { 2: ['450x500'], 4: ['450x360','450x500'], 6: ['450x360','450x500'], 8: ['450x360','450x500'] }
-    },
-    { 
-      id:'TMAR-K', 
-      label:'TMAR-KC', 
-      needles:[9,12,15], 
-      heads:[2,4,6,8], 
-      fields:['450x360','450x500'], 
-      displayName:'タジマ刺繍機 TMAR-KC TYPE2 (DCP搭載モデル)',
-      // 2頭機は450x500のみ
-      fieldsByHeads: { 2: ['450x500'], 4: ['450x360','450x500'], 6: ['450x360','450x500'], 8: ['450x360','450x500'] }
-    },
-    { 
-      id:'TFMX-2C', 
-      label:'TFMX-2C', 
-      needles:[6,9,12,15], 
-      heads:[2,4,6,8], 
-      fields:['450x360','450x500'], 
-      displayName:'タジマ刺繍機 TFMX-ⅡC TYPE2'
-    },
-  ];
-
-  // ====== オプション価格マスタ ======
-  
-  // 原反枠（BFF）価格
-  const BFF_PRICES = {
-    // TFMX-2C：固定（BFF2+BFF6のみ）
-    'TFMX-2C': {
-      '2H-360': { 'BFF2+BFF6': 32000 },
-      '2H-500': { 'BFF2+BFF6': 32000 },
-      '4H-360': { 'BFF2+BFF6': 38000 },
-      '4H-500': { 'BFF2+BFF6': 52000 },
-      '6H-360': { 'BFF2+BFF6': 55000 },
-      '6H-500': { 'BFF2+BFF6': 62000 },
-      '8H-360': { 'BFF2+BFF6': 62000 },
-      '8H-500': { 'BFF2+BFF6': 76000 }
-    },
-    // TMAR-KC / TMEZ-KC：3種類から選択
-    'TMAR-KC': {
-      '2H-500': { 'BFF3+BFF8': 36000, 'BFF2+BFF4': 41000, 'BFF2+BFF6': 42000 },
-      '4H-360': { 'BFF3+BFF8': 42000, 'BFF2+BFF4': 48000, 'BFF2+BFF6': 49000 },
-      '4H-500': { 'BFF3+BFF8': 56000, 'BFF2+BFF4': 61000, 'BFF2+BFF6': 65000 },
-      '6H-360': { 'BFF3+BFF8': 58000, 'BFF2+BFF4': 63000, 'BFF2+BFF6': 68000 },
-      '6H-500': { 'BFF3+BFF8': 62000, 'BFF2+BFF4': 69000, 'BFF2+BFF6': 73000 },
-      '8H-360': { 'BFF3+BFF8': 63000, 'BFF2+BFF4': 71000, 'BFF2+BFF6': 75000 },
-      '8H-500': { 'BFF3+BFF8': 81000, 'BFF2+BFF4': 91000, 'BFF2+BFF6': 95000 }
-    },
-    'TMEZ-K': {
-      '2H-500': { 'BFF3+BFF8': 36000, 'BFF2+BFF4': 41000, 'BFF2+BFF6': 42000 },
-      '4H-360': { 'BFF3+BFF8': 42000, 'BFF2+BFF4': 48000, 'BFF2+BFF6': 49000 },
-      '4H-500': { 'BFF3+BFF8': 56000, 'BFF2+BFF4': 61000, 'BFF2+BFF6': 65000 },
-      '6H-360': { 'BFF3+BFF8': 58000, 'BFF2+BFF4': 63000, 'BFF2+BFF6': 68000 },
-      '6H-500': { 'BFF3+BFF8': 62000, 'BFF2+BFF4': 69000, 'BFF2+BFF6': 73000 },
-      '8H-360': { 'BFF3+BFF8': 63000, 'BFF2+BFF4': 71000, 'BFF2+BFF6': 75000 },
-      '8H-500': { 'BFF3+BFF8': 81000, 'BFF2+BFF4': 91000, 'BFF2+BFF6': 95000 }
-    },
-    // 単頭機：2種類から選択（原反枠用卓付き）
-    'SINGLE': {
-      'BFF3+BFF8': 46000,
-      'BFF2+BFF4': 49000
-    }
-  };
-
-  // LED照明価格
-  const LED_PRICES = {
-    'TFMX-2C': {
-      '2H-360': 23000, '2H-500': 25000,
-      '4H-360': 32000, '4H-500': 32000,
-      '6H-360': 48000, '6H-500': 48000,
-      '8H-360': 49000, '8H-500': 51000
-    },
-    'TMAR-KC': {
-      '2H-500': 25000,
-      '4H-360': 33000, '4H-500': 33000,
-      '6H-360': 52000, '6H-500': 52000,
-      '8H-360': 52000, '8H-500': 52000
-    },
-    'TMEZ-K': {
-      '2H-500': 25000,
-      '4H-360': 33000, '4H-500': 33000,
-      '6H-360': 52000, '6H-500': 52000,
-      '8H-360': 52000, '8H-500': 52000
-    },
-    'SINGLE': 8800  // 単頭機共通
-  };
-
-  // 帽子枠価格
-  const CAP_FRAME_PRICES = {
-    'FEW': { 2: 111000, 4: 199000, 6: 288000, 8: 376000 },
-    'SINGLE': 84000
-  };
-
-  // 固定価格オプション（表示順）
-  const FIXED_OPTIONS = [
-    // 単頭機専用（表示順）
-    { id: 'bagTable', name: '袋物枠用テーブル', price: 31000, models: ['single'], order: 3 },
-    { id: 'leg', name: '脚', price: 58000, models: ['single'], order: 4 },
-    { id: 'legTray', name: '脚トレイ', price: 8000, models: ['single'], order: 5 },
-    { id: 'positionMarker', name: 'ポジションマーカー 1H', price: 8000, models: ['single', 'few'], order: 7 },
-    { id: 'bobbinWinder', name: '下糸巻装置', price: 28000, models: ['single', 'few'], order: 8 },
-    { id: 'laserMarker', name: 'レーザークロスマーカー', price: 15000, models: ['single'], order: 9 },
-    { id: 'sockFrameSet', name: '単頭機用 タジマ靴下枠セット ゲージ付き', price: 23000, models: ['single'], order: 10 },
-    { id: 'sockFrameSetMarusiki', name: '単頭機用 丸正式靴下枠セット ゲージ付き', price: 39000, models: ['single'], order: 11 },
-    { id: 'mFrameKit', name: 'Mフレームスターターキット 3', price: 143000, models: ['single'], order: 12 },
-    { id: 'mClip50', name: 'Mクリップ：50', price: 4000, models: ['single'], order: 13 },
-    { id: 'mClip100', name: 'Mクリップ：100', price: 6000, models: ['single'], order: 14 },
-    { id: 'multiCode', name: 'マルチコード装置2 1H', price: 87000, models: ['single'], order: 15 },
-    { id: 'anshinSupport5y', name: '安心定額サポート（5年間）', price: 180000, models: ['single'], order: 16, group: 'support' },
-  ];
-
-  // 機種限定・選択式オプション
-  const MODEL_SPECIFIC_OPTIONS = {
-    'TMEZ-S': [
-      { id: 'esq_lr_no', name: 'ESQ-C L 又は R 素材糸切れセンサー無', price: 186000 },
-      { id: 'esq_lr_yes', name: 'ESQ-C L & R 素材糸切れセンサー無', price: 303000 },
-      { id: 'esq_lr_sensor_no', name: 'ESQ-C L 又は R 素材糸切れセンサー有', price: 188000 },
-      { id: 'esq_lr_sensor_yes', name: 'ESQ-C L & R 素材糸切れセンサー有', price: 308000 }
-    ],
-    'TMBR2-S': [
-      { id: 'sequin_2_9_lr', name: 'シークインⅣ 2mm～9mm L 又は R', price: 169000 },
-      { id: 'sequin_2_9_lr_both', name: 'シークインⅣ 2mm～9mm L & R', price: 231000 },
-      { id: 'sequin_2_22_lr', name: 'シークインⅣ 2mm～22mm L 又は R', price: 181000 },
-      { id: 'sequin_2_22_lr_both', name: 'シークインⅣ 2mm～22mm L & R', price: 255000 }
-    ],
-    'TMBP2-S': [
-      { id: 'sequin_2_9_lr', name: 'シークインⅣ 2mm～9mm L 又は R', price: 169000 },
-      { id: 'sequin_2_9_lr_both', name: 'シークインⅣ 2mm～9mm L & R', price: 231000 },
-      { id: 'sequin_2_22_lr', name: 'シークインⅣ 2mm～22mm L 又は R', price: 181000 },
-      { id: 'sequin_2_22_lr_both', name: 'シークインⅣ 2mm～22mm L & R', price: 255000 }
-    ]
-  };
-
-  // =========================================================
-
-
-  // === 追加：刺繍枠（TFA/TFA2）マスタ（xlsx から生成） ===
-  const TFA_FRAMES = [{"id": "TFA-70", "type": "TFA", "frameType": "360P", "price": 2600, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA-90", "type": "TFA", "frameType": "360P", "price": 2600, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA-120", "type": "TFA", "frameType": "360P", "price": 2600, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA-150", "type": "TFA", "frameType": "360P", "price": 2600, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA-180", "type": "TFA", "frameType": "360P", "price": 2600, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA-210", "type": "TFA", "frameType": "360P", "price": 2600, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA-210X120", "type": "TFA", "frameType": "360P", "price": 3500, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA255X255", "type": "TFA", "frameType": "360P", "price": 3600, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA260X335", "type": "TFA", "frameType": "360P", "price": 4500, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA2:340X310", "type": "TFA2", "frameType": "360P", "price": null, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA255X160", "type": "TFA", "frameType": "360P", "price": 4000, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA395X325", "type": "TFA", "frameType": "360P", "price": 5000, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA2:335X453", "type": "TFA2", "frameType": "360P", "price": 6400, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA2:413X239", "type": "TFA2", "frameType": "360P", "price": 6100, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA2:413X342", "type": "TFA2", "frameType": "360P", "price": 5900, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA465X320", "type": "TFA", "frameType": "360P", "price": null, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA2:510X310", "type": "TFA2", "frameType": "360P", "price": 6100, "compat": {"TMEZ-KC_360": true, "TMEZ-KC_500": true, "TMAR-KC_360": true, "TMAR-KC_500": true, "TFMX-2C_360": true, "TFMX-2C_500": true, "TMBP2-XC_600": true}}, {"id": "TFA2:335X453", "type": "TFA2", "frameType": "500Ｐ", "price": 6400, "compat": {"TMEZ-KC_500": true, "TMAR-KC_500": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA2:413X467", "type": "TFA2", "frameType": "500Ｐ", "price": 6300, "compat": {"TMEZ-KC_500": true, "TMAR-KC_500": true, "TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA2:510X450", "type": "TFA2", "frameType": "500Ｐ", "price": 6200, "compat": {"TMEZ-KC_500": true, "TMAR-KC_500": true, "TFMX-2C_500": true, "TMBP2-XC_600": true}}, {"id": "TFA2:410X555", "type": "TFA2", "frameType": "", "price": null, "compat": {"TFMX-2C_500": true, "TMBP2-XC_600": true, "SINGLE_500": true}}, {"id": "TFA2:610X625", "type": "TFA2", "frameType": "", "price": 8800, "compat": {"TMBP2-XC_600": true}}];
-
-  function getTFACompatKey(){
-    const catEl = document.getElementById('machineCategory');
-    const modelEl = document.getElementById('machineModel');
-    const fieldEl = document.getElementById('machineField');
-
-    const cat = catEl ? catEl.value : 'single';
-    const modelId = modelEl ? modelEl.value : '';
-    const field = fieldEl ? fieldEl.value : '';
-
-    // 縦寸（Y）を抽出："450x500" -> 500
-    let y = 500;
-    if(cat === 'few'){
-      const m = String(field).match(/x(\d+)/);
-      if(m) y = parseInt(m[1],10);
-    }
-
-    // モデルキーを対応表に寄せる
-    let mk = 'SINGLE';
-    if(cat === 'few'){
-      if(modelId === 'TMEZ-K') mk = 'TMEZ-KC';
-      else if(modelId === 'TMAR-K') mk = 'TMAR-KC';
-      else if(modelId === 'TFMX-2C') mk = 'TFMX-2C';
-      else if(modelId === 'TMBP2-XC') mk = 'TMBP2-XC';
-      else mk = modelId;
-    }
-
-    // TMBP2-XC は 600固定（表も 600列のみ）
-    if(mk === 'TMBP2-XC') y = 600;
-
-    return mk + '_' + String(y);
-  }
-
-  function renderTFAList(){
-    const list = document.getElementById('tfaList');
-    const sumEl = document.getElementById('tfaSummary');
-    if(!list) return;
-
-    const key = getTFACompatKey();
-    const candidates = TFA_FRAMES.filter(f => f.compat && f.compat[key]);
-
-    // 既存選択の保持（同じIDのチェック状態・数量・単価）
-    const prevChecked = {};
-    const prevQty = {};
-    const prevPrice = {};
-    document.querySelectorAll('#tfaList input[type=checkbox][data-tfa-id]').forEach(cb=>{
-      const id = cb.getAttribute('data-tfa-id');
-      if(id) prevChecked[id] = cb.checked;
-    });
-    document.querySelectorAll('#tfaList input[type=number][data-tfa-qty]').forEach(inp=>{
-      const id = inp.getAttribute('data-tfa-qty');
-      if(id) prevQty[id] = inp.value;
-    });
-    document.querySelectorAll('#tfaList input[type=number][data-tfa-price]').forEach(inp=>{
-      const id = inp.getAttribute('data-tfa-price');
-      if(id) prevPrice[id] = inp.value;
-    });
-
-    list.innerHTML = '';
-
-    if(!candidates.length){
-      list.innerHTML = '<div class="muted">（この機種/範囲で選べるTFA枠はありません）</div>';
-      if(sumEl) sumEl.textContent = '';
+    if(!base){
+      panel.style.display = 'none';
+      list.innerHTML = '';
       return;
     }
 
-    candidates.forEach(f=>{
-      const row = document.createElement('div');
-      const isOn = !!prevChecked[f.id];
-      row.className = 'opt-row ' + (isOn ? 'on' : 'off');
-      row.id = 'tfa_row_' + f.id.replace(/[^a-zA-Z0-9_-]/g,'_');
+    panel.style.display = '';
+    list.innerHTML = '';
 
-      // スイッチ（他オプションと同じUI）
-      const sw = document.createElement('label');
-      sw.className = 'switch';
+    // カテゴリ別にグループ化して表示
+    const categories = ['hardware', 'option', 'standard', 'dtf', 'setup', 'special', 'support'];
+    
+    categories.forEach(cat => {
+      const items = DGNET_SAAS_OPTIONS.filter(o => o.category === cat);
+      if(items.length === 0) return;
 
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.setAttribute('data-tfa-id', f.id);
-      cb.checked = isOn;
-      cb.addEventListener('change', ()=>{
-        row.classList.toggle('on', cb.checked);
-        row.classList.toggle('off', !cb.checked);
-        applyAndRender();
+      const catDiv = document.createElement('div');
+      catDiv.style.marginTop = '12px';
+      catDiv.innerHTML = `<div style="font-weight:700; font-size:12px; color:#666; margin-bottom:6px;">${DGNET_CATEGORY_NAMES[cat]}</div>`;
+      
+      items.forEach(opt => {
+        const div = document.createElement('div');
+        div.className = 'opt-row off';
+        div.id = `dgnet_row_${opt.id}`;
+
+        let qtyField = '';
+        if(opt.hasQty){
+          qtyField = `<input type="number" id="dgnet_qty_${opt.id}" class="opt-qty" min="1" step="1" value="1" oninput="applyAndRender()" />`;
+        } else {
+          qtyField = '<div style="width:80px;"></div>';
+        }
+
+        div.innerHTML = `
+          <label class="switch">
+            <input type="checkbox" id="dgnet_${opt.id}" onchange="toggleDGNetOption('${opt.id}')">
+            <span class="slider"></span>
+          </label>
+          <div class="opt-label">
+            ${opt.name}
+            <span style="color:#666; font-size:12px; margin-left:6px;">¥${opt.price.toLocaleString()}</span>
+            ${opt.hasQty ? `<span style="color:#666; font-size:11px; margin-left:4px;">/${opt.unitName}</span>` : ''}
+          </div>
+          ${qtyField}
+        `;
+
+        catDiv.appendChild(div);
       });
 
-      const slider = document.createElement('span');
-      slider.className = 'slider';
-
-      sw.appendChild(cb);
-      sw.appendChild(slider);
-
-      const label = document.createElement('div');
-      label.className = 'opt-label';
-      const priceText = (f.price == null) ? '価格未設定' : ('¥' + Number(f.price).toLocaleString());
-      const typeText = (f.type || 'TFA') + (f.frameType ? (' / ' + f.frameType) : '');
-      label.innerHTML =
-        '<div style="font-weight:700">' + f.id + '</div>' +
-        '<div class="muted" style="font-size:12px">' + typeText + ' / ' + priceText + '</div>';
-
-      // 単価（価格未設定の枠は手入力可）
-      const price = document.createElement('input');
-      price.type = 'number';
-      price.min = '0';
-      price.step = '100';
-      price.placeholder = '単価';
-      price.style.width = '120px';
-      price.style.textAlign = 'right';
-      price.setAttribute('data-tfa-price', f.id);
-      if(f.price != null) price.value = String(f.price);
-      else if(prevPrice[f.id] != null) price.value = String(prevPrice[f.id]);
-      price.addEventListener('input', ()=>applyAndRender());
-
-      // 数量
-      const qty = document.createElement('input');
-      qty.type = 'number';
-      qty.min = '1';
-      qty.step = '1';
-      qty.className = 'opt-qty';
-      qty.value = prevQty[f.id] != null ? String(prevQty[f.id]) : '1';
-      qty.setAttribute('data-tfa-qty', f.id);
-      qty.addEventListener('input', ()=>applyAndRender());
-
-      row.appendChild(sw);
-      row.appendChild(label);
-      row.appendChild(price);
-      row.appendChild(qty);
-      list.appendChild(row);
+      list.appendChild(catDiv);
     });
 
-    // サマリー更新
-    updateTFASummary();
+    updateDGNetSummary();
   }
 
-  function getSelectedTFAItems(){
-    const items = [];
-    const list = document.getElementById('tfaList');
-    if(!list) return items;
+  function toggleDGNetOption(id){
+    const cb = document.getElementById(`dgnet_${id}`);
+    const row = document.getElementById(`dgnet_row_${id}`);
+    if(cb && row){
+      row.className = cb.checked ? 'opt-row on' : 'opt-row off';
+    }
+    updateDGNetSummary();
+    applyAndRender();
+  }
 
-    list.querySelectorAll('input[type=checkbox][data-tfa-id]').forEach(cb=>{
-      if(!cb.checked) return;
-      const id = cb.getAttribute('data-tfa-id');
-      const qtyEl = list.querySelector('input[type=number][data-tfa-qty="' + id + '"]');
-      const priceEl = list.querySelector('input[type=number][data-tfa-price="' + id + '"]');
-      const qty = Math.max(1, parseInt(qtyEl ? (qtyEl.value || '1') : '1', 10));
-      const unit = Math.max(0, parseInt(priceEl ? (priceEl.value || '0') : '0', 10));
-      items.push({ name: '刺繍枠：' + id, qty: qty, unitPrice: unit });
+  function updateDGNetSummary(){
+    const sumEl = document.getElementById('dgnetOptionsSummary');
+    if(!sumEl) return;
+
+    const selected = getSelectedDGNetOptions();
+    if(selected.length === 0){
+      sumEl.textContent = '';
+      return;
+    }
+
+    const total = selected.reduce((s, it) => s + (it.unitPrice * it.qty), 0);
+    sumEl.textContent = `${selected.length}項目 / 合計 ¥${total.toLocaleString()}`;
+  }
+
+  function getSelectedDGNetOptions(){
+    const items = [];
+    DGNET_SAAS_OPTIONS.forEach(opt => {
+      const cb = document.getElementById(`dgnet_${opt.id}`);
+      if(!cb || !cb.checked) return;
+      
+      let qty = 1;
+      if(opt.hasQty){
+        const qtyEl = document.getElementById(`dgnet_qty_${opt.id}`);
+        qty = Math.max(1, parseInt(qtyEl?.value || '1', 10));
+      }
+
+      items.push({
+        name: opt.name,
+        qty: qty,
+        unitPrice: opt.price,
+        billingType: opt.billingType,
+        category: opt.category
+      });
     });
     return items;
   }
 
-  function getSelectedDGLessonItem(){
-    const cb = document.getElementById('dgopt_DG_LESSON');
-    if(!cb || !cb.checked) return null;
-    const priceEl = document.getElementById('dgopt_DG_LESSON_price');
-    const qtyEl = document.getElementById('dgopt_DG_LESSON_qty');
-    const unitPrice = Math.max(0, parseInt(priceEl?.value || '0', 10)) || 0;
-    const qty = Math.max(1, parseInt(qtyEl?.value || '1', 10)) || 1;
-    return { name:'DG講習費用', qty, unitPrice };
-  }
-
-
-  function updateTFASummary(){
-    const sumEl = document.getElementById('tfaSummary');
-    if(!sumEl) return;
-    const items = getSelectedTFAItems();
-    if(!items.length){
-      sumEl.textContent = '';
-      return;
-    }
-    const total = items.reduce((s,it)=>s + (Number(it.unitPrice)||0) * (Number(it.qty)||0), 0);
-    sumEl.textContent = items.length + '項目 / 合計 ' + total.toLocaleString();
-  }
-
-  function resetTFASection(){
-    const panel = document.getElementById('tfaPanel');
-    const list = document.getElementById('tfaList');
-    const sumEl = document.getElementById('tfaSummary');
-
-    if(list){
-      list.querySelectorAll('input[type=checkbox][data-tfa-id]').forEach(cb=>{ cb.checked = false; });
-      list.querySelectorAll('input[type=number][data-tfa-qty]').forEach(inp=>{ inp.value = '1'; });
-      // 単価は「初期値（マスタにあるもの）」へ戻すため再描画
-    }
-    if(sumEl) sumEl.textContent = '';
-    // 再描画して初期単価に戻す
-    renderTFAList();
-    if(panel) panel.open = false;
-    applyAndRender();
-  }
-
-  // 刺繍ソフト（DG）価格・選択ルール（A案：DG-Sは別枠＝オプション/フォント不可）
   // =========================================================
-  const DG_SOFTWARE = [
-    { id:'WRITER_PLUS', name:'Writer Plus（彩 付属）', price:0, optionsEnabled:false, fontsEnabled:false, lanRule:'WP' },
-    { id:'EXPRESS', name:'DG17 EXPRESS', price:175000, optionsEnabled:false, fontsEnabled:false, lanRule:'DG' },
-    { id:'COMPOSER', name:'DG17 COMPOSER', price:382000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
-    { id:'CREATOR', name:'DG17 CREATOR', price:651000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
-    { id:'ILLUSTRATOR_EXTREME', name:'DG17 ILLUSTRATOR EXTREME', price:777000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
-    { id:'ARTIST_PLUS', name:'DG17 ARTIST PLUS', price:1029000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
-    { id:'MAESTRO', name:'DG17 MAESTRO', price:1406000, optionsEnabled:true,  fontsEnabled:true,  lanRule:'DG' },
-    { id:'DG_S', name:'DG-S', price:302000, optionsEnabled:false, fontsEnabled:false, lanRule:'DG' }
-  ];
-
-  // minGrade は「このグレード以上」で選択可（DG-Sは判定対象外なので入れない）
-  const DG_OPTIONS = [
-    { id:'ELEMENT', name:'エレメント', price:73000, minGrade:'CREATOR' },
-    { id:'EVERYTHING_SEQUIN_PACK', name:'エブリシングシークインパック', price:399000, minGrade:'CREATOR' },
-    { id:'BEADS_PACK', name:'ビーズパック', price:585000, minGrade:'CREATOR' },
-    { id:'PHOTO_CREATOR', name:'フォトクリエーター', price:157000, minGrade:'ILLUSTRATOR_EXTREME' },
-    { id:'CHENILLE', name:'シェニール', price:204000, minGrade:'CREATOR' },
-    { id:'DIRECT_MACHINE_HOLDER', name:'ダイレクトマシンホルダー', price:51000, minGrade:'COMPOSER' },
-    { id:'CHENILLE_TUCKING', name:'シェニールタッキング', price:78000, minGrade:'COMPOSER' },
-    { id:'HEAD_GROUP', name:'ヘッドグループ（刺繍機ヘッド選択）', price:178000, minGrade:'ILLUSTRATOR_EXTREME' }
-  ];
-
-  const DG_FONTS = [
-    { id:'FONT_1', name:'フォント1（日本語以外）', price:46000, minGrade:'COMPOSER' },
-    { id:'SEQUIN_FONT_PACK', name:'シークインフォントパック', price:92000, minGrade:'COMPOSER' },
-    { id:'MONOGRAM_FONT_PACK', name:'モノグラムフォントパック', price:92000, minGrade:'COMPOSER' },
-    { id:'PLATINUM_FONT_PACK', name:'プラチナムフォントパック', price:237000, minGrade:'COMPOSER' },
-    { id:'FONT_MEDLEY', name:'フォントメドレー', price:92000, minGrade:'COMPOSER' },
-    { id:'SYMPHONY_1_FONT_PACK', name:'シンフォニー1 フォントパック', price:55000, minGrade:'COMPOSER' },
-    { id:'NONAKA_FONT', name:'野中フォント', price:72000, minGrade:'COMPOSER' },
-    { id:'TAJIMA_JP_FONT_DGA', name:'タジマ日本語フォント：DG:A', price:95000, minGrade:'COMPOSER' },
-    { id:'TAJIMA_JP_FONT_DGB', name:'タジマ日本語フォント：DG:B', price:95000, minGrade:'COMPOSER' },
-    { id:'TAJIMA_JP_FONT_DGC', name:'タジマ日本語フォント：DG:C（A+Bセット）', price:150000, minGrade:'COMPOSER' },
-    { id:'TAJIMA_JP_FONT_PACK', name:'タジマ日本語フォントパック（現標準フォント）', price:90000, minGrade:'COMPOSER' }
-  ];
-
-  const DG_LAN_LICENSES = {
-    DG: { id:'LAN_DG', name:'LAN刺繍機ライセンス（DG）', price:47000, note:'2〜10台目までの接続（追加）' },
-    WP: { id:'LAN_WRITER_PLUS', name:'LAN刺繍機ライセンス（ライタープラス）', price:22000, note:'2台目〜5台目の接続（追加）' }
-  };
-
-  // ====== 価格マスタ（完全版） ======
-  // キーは「見積番号に入れるモデル名」：例）TMEZ-K1502C / TMBR2-S1501C
-  const PRICE_MASTER = {
-    // 彩（SAI）
-    'MDP-S0801C': 1100000,
-
-    // 単頭機 TMAR-K系（450x360 / 450x500）
-    'TMAR-K0902C': 4066000,
-    'TMAR-K0904C': 4851000,
-    'TMAR-K0904C-500': 5493000,
-    'TMAR-K0906C': 6139000,
-    'TMAR-K0906C-500': 6635000,
-    'TMAR-K0908C': 7247000,
-    'TMAR-K0908C-500': 8075000,
-    
-    'TMAR-K1202C': 4132000,
-    'TMAR-K1204C': 4975000,
-    'TMAR-K1204C-500': 5616000,
-    'TMAR-K1206C': 6318000,
-    'TMAR-K1206C-500': 6767000,
-    'TMAR-K1208C': 7485000,
-    'TMAR-K1208C-500': 8321000,
-    
-    'TMAR-K1502C': 4203000,
-    'TMAR-K1504C': 5108000,
-    'TMAR-K1504C-500': 5752000,
-    'TMAR-K1506C': 6512000,
-    'TMAR-K1506C-500': 6974000,
-    'TMAR-K1508C': 7743000,
-    'TMAR-K1508C-500': 8596000,
-
-    // 単頭機 TMEZ-S系（360x500固定）
-    'TMEZ-S0901C': 2664000,
-    'TMEZ-S1201C': 2699000,
-    'TMEZ-S1501C': 2730000,
-
-    // 単頭機 TMBR2-S系（360x500固定）
-    'TMBR2-S0601C': 2259000,
-    'TMBR2-S1201C': 2320000,
-    'TMBR2-S1501C': 2355000,
-    'TMBR2-S1801C': 2467000,
-
-    // 単頭機 TMBP2-S系（360x500固定）
-    'TMBP2-S0601C': 2064000,
-    'TMBP2-S1201C': 2128000,
-    'TMBP2-S1501C': 2159000,
-
-    // 少数頭機 TFMX-2C系
-    'TFMX-2C0602': 3337000,
-    'TFMX-2C0602-500': 3561000,
-    'TFMX-2C0604': 4147000,
-    'TFMX-2C0604-500': 4583000,
-    'TFMX-2C0606': 4986000,
-    'TFMX-2C0606-500': 5600000,
-    'TFMX-2C0608': 5892000,
-    'TFMX-2C0608-500': 6723000,
-
-    'TFMX-2C0902': 3390000,
-    'TFMX-2C0902-500': 3614000,
-    'TFMX-2C0904': 4252000,
-    'TFMX-2C0904-500': 4688000,
-    'TFMX-2C0906': 5141000,
-    'TFMX-2C0906-500': 5758000,
-    'TFMX-2C0908': 6102000,
-    'TFMX-2C0908-500': 6935000,
-
-    'TFMX-2C1202': 3431000,
-    'TFMX-2C1202-500': 3656000,
-    'TFMX-2C1204': 4334000,
-    'TFMX-2C1204-500': 4771000,
-    'TFMX-2C1206': 5266000,
-    'TFMX-2C1206-500': 5882000,
-    'TFMX-2C1208': 6266000,
-    'TFMX-2C1208-500': 7100000,
-
-    'TFMX-2C1502': 3459000,
-    'TFMX-2C1502-500': 3685000,
-    'TFMX-2C1504': 4393000,
-    'TFMX-2C1504-500': 4829000,
-    'TFMX-2C1506': 5354000,
-    'TFMX-2C1506-500': 5970000,
-    'TFMX-2C1508': 6384000,
-    'TFMX-2C1508-500': 7217000,
-
-    // 少数頭機 TMEZ-K系
-    'TMEZ-KC0902C': 4981000,
-    'TMEZ-KC0902C-500': 4981000,
-    'TMEZ-KC0904C': 6080000,
-    'TMEZ-KC0904C-500': 6730000,
-    'TMEZ-KC0906C': 7895000,
-    'TMEZ-KC0906C-500': 8327000,
-    'TMEZ-KC0908C': 9316000,
-    'TMEZ-KC0908C-500': 10150000,
-
-    'TMEZ-KC1202C': 5036000,
-    'TMEZ-KC1202C-500': 5036000,
-    'TMEZ-KC1204C': 6200000,
-    'TMEZ-KC1204C-500': 6846000,
-    'TMEZ-KC1206C': 8075000,
-    'TMEZ-KC1206C-500': 8507000,
-    'TMEZ-KC1208C': 9553000,
-    'TMEZ-KC1208C-500': 10385000,
-
-    'TMEZ-KC1502C': 5095000,
-    'TMEZ-KC1502C-500': 5095000,
-    'TMEZ-KC1504C': 6315000,
-    'TMEZ-KC1504C-500': 6964000,
-    'TMEZ-KC1506C': 8250000,
-    'TMEZ-KC1506C-500': 8681000,
-    'TMEZ-KC1508C': 9789000,
-    'TMEZ-KC1508C-500': 10620000,
-
-    // 少数頭機 TMAR-KC系
-    'TMAR-KC0902C': 4066000,
-    'TMAR-KC0902C-500': 4066000,
-    'TMAR-KC0904C': 4851000,
-    'TMAR-KC0904C-500': 5493000,
-    'TMAR-KC0906C': 6139000,
-    'TMAR-KC0906C-500': 6635000,
-    'TMAR-KC0908C': 7247000,
-    'TMAR-KC0908C-500': 8075000,
-
-    'TMAR-KC1202C': 4132000,
-    'TMAR-KC1202C-500': 4132000,
-    'TMAR-KC1204C': 4975000,
-    'TMAR-KC1204C-500': 5616000,
-    'TMAR-KC1206C': 6318000,
-    'TMAR-KC1206C-500': 6767000,
-    'TMAR-KC1208C': 7485000,
-    'TMAR-KC1208C-500': 8321000,
-
-    'TMAR-KC1502C': 4203000,
-    'TMAR-KC1502C-500': 4203000,
-    'TMAR-KC1504C': 5108000,
-    'TMAR-KC1504C-500': 5752000,
-    'TMAR-KC1506C': 6512000,
-    'TMAR-KC1506C-500': 6974000,
-    'TMAR-KC1508C': 7743000,
-    'TMAR-KC1508C-500': 8596000,
-  };
-
-  let basePriceManuallyEdited = false;
-
-  function initMachineUI(){
-    const cat = document.getElementById('machineCategory');
-    const model = document.getElementById('machineModel');
-    const needles = document.getElementById('machineNeedles');
-    const heads = document.getElementById('machineHeads');
-    const field = document.getElementById('machineField');
-    const unit = document.getElementById('baseUnitPrice');
-
-    cat.addEventListener('change', ()=>{
-      basePriceManuallyEdited = false;
-      updateMachineSelectors();
-      onMachineChanged();
-    });
-    model.addEventListener('change', ()=>{
-      basePriceManuallyEdited = false;
-      updateNeedlesHeadsFields();
-      onMachineChanged();
-    });
-    needles.addEventListener('change', ()=>{
-      basePriceManuallyEdited = false;
-      onMachineChanged();
-    });
-    heads.addEventListener('change', ()=>{
-      basePriceManuallyEdited = false;
-      updateFieldOptions(); // 頭数変更時にフィールド選択肢を更新
-      onMachineChanged();
-    });
-    field.addEventListener('change', ()=>{
-      basePriceManuallyEdited = false;
-      onMachineChanged();
-    });
-
-    unit.addEventListener('input', ()=>{
-      basePriceManuallyEdited = true;
-      applyAndRender();
-    });
-
-    updateMachineSelectors();
-    onMachineChanged();
-  }
-
-  function updateMachineSelectors(){
-    const cat = document.getElementById('machineCategory').value;
-    const model = document.getElementById('machineModel');
-    model.innerHTML = '';
-
-    // 区分別：機種リスト
-    let list;
-    if(cat === 'few') list = FEW_MODELS;
-    else if(cat === 'sai') list = SAI_MODELS;
-    else list = SINGLE_SERIES;
-
-    list.forEach((m,i)=>{
-      const opt = document.createElement('option');
-      opt.value = m.id;
-      opt.textContent = m.label;
-      if(i===0) opt.selected = true;
-      model.appendChild(opt);
-    });
-
-    updateNeedlesHeadsFields();
-
-    // 画面：TFAカードは彩では非表示（彩オプションに集約）
-    // 刺繍ソフト（DG）カードは彩でも表示（実際の見積もりで彩とDGの組み合わせがあるため）
-    const cardTFA = document.getElementById('cardTFA');
-    const cardDG  = document.getElementById('cardDG');
-    if(cardTFA) cardTFA.style.display = (cat === 'sai') ? 'none' : '';
-    // DGカードは常に表示
-    if(cardDG)  cardDG.style.display  = '';
-
-    // 運送費：少数頭機は「その他（手入力）」を基本にする
-    const region = document.getElementById('region');
-    const other = document.getElementById('regionOtherPrice');
-    const shippingTitle = document.getElementById('shippingTitle');
-
-    // 地域ラベルは区分で変える（PDFの運送据付表に基づく）
-    // 彩用と単頭機用で選択肢が異なるため、option要素自体を再構築
-    
-    if(cat === 'few'){
-      // 少数頭機：単頭機と同じ選択肢を表示（実運用は手入力）
-      region.innerHTML = `
-        <option value="kinki">単頭機：近畿（100,000円）</option>
-        <option value="chugoku">単頭機：中国（130,000円）</option>
-        <option value="shikoku">単頭機：四国（140,000円）</option>
-        <option value="kyushu">単頭機：九州（170,000円）</option>
-        <option value="other" selected>その他（要相談：手入力）</option>
-      `;
-      other.disabled = false;
-      shippingTitle.textContent = '運送据付・セットアップ及び講習費用（少数頭機：記入式）';
-    }else if(cat === 'sai'){
-      // 彩：彩専用の運送費
-      region.innerHTML = `
-        <option value="sai_kinki" selected>彩：近畿（60,000円）</option>
-        <option value="sai_chugoku">彩：中国（90,000円）</option>
-        <option value="sai_shikoku">彩：四国（100,000円）</option>
-        <option value="sai_kyushu">彩：九州（130,000円～160,000円）</option>
-        <option value="other">その他（要相談：手入力）</option>
-      `;
-      other.disabled = true;
-      shippingTitle.textContent = '運送据付・セットアップ及び講習費用（彩）';
-    }else{
-      // 単頭機
-      region.innerHTML = `
-        <option value="kinki" selected>単頭機：近畿（100,000円）</option>
-        <option value="chugoku">単頭機：中国（130,000円）</option>
-        <option value="shikoku">単頭機：四国（140,000円）</option>
-        <option value="kyushu">単頭機：九州（170,000円）</option>
-        <option value="other">その他（要相談：手入力）</option>
-      `;
-      other.disabled = true;
-      shippingTitle.textContent = '運送据付・セットアップ及び講習費用（単頭機）';
-    }
-  }
-
-  function updateNeedlesHeadsFields(){
-    const cat = document.getElementById('machineCategory').value;
-    const modelId = document.getElementById('machineModel').value;
-
-    const needlesSel = document.getElementById('machineNeedles');
-    const headsSel = document.getElementById('machineHeads');
-    const fieldSel = document.getElementById('machineField');
-
-    // 表示/非表示（彩は固定なので隠す）
-    if(needlesSel?.parentElement) needlesSel.parentElement.style.display = (cat === 'sai') ? 'none' : '';
-    if(headsSel?.parentElement)   headsSel.parentElement.style.display   = (cat === 'sai') ? 'none' : '';
-    if(fieldSel?.parentElement)   fieldSel.parentElement.style.display   = (cat === 'sai') ? 'none' : '';
-
-    needlesSel.innerHTML = '';
-    headsSel.innerHTML = '';
-    fieldSel.innerHTML = '';
-
-    if(cat === 'sai'){
-      // 固定値（見積生成用の内部値）
-      const optN = document.createElement('option');
-      optN.value = '8';
-      optN.textContent = '8針（固定）';
-      needlesSel.appendChild(optN);
-
-      const optH = document.createElement('option');
-      optH.value = '1';
-      optH.textContent = '1頭（固定）';
-      headsSel.appendChild(optH);
-
-      const optF = document.createElement('option');
-      optF.value = '200x300';
-      optF.textContent = '200×300（固定）';
-      fieldSel.appendChild(optF);
-      return;
-    }
-
-    if(cat === 'single'){
-      const m = SINGLE_SERIES.find(x=>x.id===modelId);
-      (m?.needles || []).forEach((n,i)=>{
-        const opt = document.createElement('option');
-        opt.value = String(n);
-        opt.textContent = `${n}針`;
-        if(i===0) opt.selected = true;
-        needlesSel.appendChild(opt);
-      });
-
-      // 単頭：頭数01固定
-      const h = document.createElement('option');
-      h.value = '1';
-      h.textContent = '1頭';
-      headsSel.appendChild(h);
-
-      // 単頭：360x500固定
-      const f = document.createElement('option');
-      f.value = '360x500';
-      f.textContent = '360×500';
-      fieldSel.appendChild(f);
-    }else{
-      // 少数頭機
-      const m = FEW_MODELS.find(x=>x.id===modelId);
-      (m?.needles || []).forEach((n,i)=>{
-        const opt = document.createElement('option');
-        opt.value = String(n);
-        opt.textContent = `${n}針`;
-        if(i===0) opt.selected = true;
-        needlesSel.appendChild(opt);
-      });
-
-      (m?.heads || []).forEach((h,i)=>{
-        const opt = document.createElement('option');
-        opt.value = String(h);
-        opt.textContent = `${h}頭`;
-        if(i===0) opt.selected = true;
-        headsSel.appendChild(opt);
-      });
-
-      updateFieldOptions();
-    }
-  }
-
-  function updateFieldOptions() {
-    const cat = document.getElementById('machineCategory').value;
-    if (cat !== 'few') return;
-
-    const modelId = document.getElementById('machineModel').value;
-    const heads = parseInt(document.getElementById('machineHeads').value || '2', 10);
-    const fieldSel = document.getElementById('machineField');
-    
-    fieldSel.innerHTML = '';
-
-    const m = FEW_MODELS.find(x => x.id === modelId);
-    if (!m) return;
-
-    // 頭数に応じたフィールド選択肢
-    let availableFields = m.fields || [];
-    if (m.fieldsByHeads && m.fieldsByHeads[heads]) {
-      availableFields = m.fieldsByHeads[heads];
-    }
-
-    availableFields.forEach((v, i) => {
-      const opt = document.createElement('option');
-      opt.value = v;
-      opt.textContent = (v === '450x360') ? '450×360' : '450×500';
-      if (i === 0) opt.selected = true;
-      fieldSel.appendChild(opt);
-    });
-  }
-
-  function getSelectedMachine(){
-    const cat = document.getElementById('machineCategory').value;
-    const modelId = document.getElementById('machineModel').value;
-    const needles = parseInt(document.getElementById('machineNeedles').value || '0', 10);
-    const heads = parseInt(document.getElementById('machineHeads').value || '1', 10);
-    const field = document.getElementById('machineField').value;
-
-    if(cat === 'sai'){
-      const m = SAI_MODELS.find(x=>x.id===modelId) || SAI_MODELS[0];
-      const modelKey = m.id;                 // PRICE_MASTERキー
-      const full = m.full || 'MDP-S0801C(200x300)S';
-      return {
-        category:'sai',
-        modelKey,
-        full,
-        needles:8,
-        heads:1,
-        field:'200x300',
-        displayName: m.displayName || 'TAJIMA 彩（SAI）'
-      };
-    }
-
-    if(cat === 'single'){
-      const m = SINGLE_SERIES.find(x=>x.id===modelId);
-      // 例：TMBR2-S1501C(360x500)S
-      const code = `${pad2(needles)}01`; // 針数+01
-      const modelKey = `${modelId}${code}C`; // 見積番号に入れるモデル名
-      const full = `${modelId}${code}C(360x500)S`;
-      return { 
-        category:'single', 
-        modelKey, 
-        full, 
-        needles, 
-        heads:1, 
-        field:'360x500',
-        displayName: m?.displayName || 'タジマ刺繍機'
-      };
-    }else{
-      const m = FEW_MODELS.find(x=>x.id===modelId);
-      // 例：TMEZ-K1502C(450x500)S
-      const code = `${pad2(needles)}${pad2(heads)}`;
-      const fieldSuffix = (field === '450x500') ? '-500' : '';
-
-      // モデルキー生成
-      let modelKey;
-      if (modelId === 'TFMX-2C') {
-        // TFMX-2Cは「TFMX-2C0602」形式（Cを付けない）
-        modelKey = `${modelId}${code}${fieldSuffix}`;
-      } else {
-        // TMAR-K / TMEZ-Kは「TMAR-KC0902C」形式
-        let modelPrefix = modelId;
-        if (modelId === 'TMAR-K') modelPrefix = 'TMAR-KC';
-        if (modelId === 'TMEZ-K') modelPrefix = 'TMEZ-KC';
-        modelKey = `${modelPrefix}${code}C${fieldSuffix}`;
-      }
-
-      const full = `${modelId}${code}C(${field})S`;
-      return { 
-        category:'few', 
-        modelKey, 
-        full, 
-        needles, 
-        heads, 
-        field,
-        displayName: m?.displayName || 'タジマ刺繍機'
-      };
-    }
-  }
-
-  function getMachineCodeForQuoteNo(){
-    if(typeof FREEFORM_MODE !== 'undefined' && FREEFORM_MODE){
-      // FREEFORM版：DGが選択されていればグレード名、なければFREEFORM
-      const dgGrade = document.getElementById('dgGrade')?.value || '';
-      if(dgGrade){
-        // DG_SOFTWARE配列から該当グレードのnameを取得
-        const dgItem = DG_SOFTWARE.find(d => d.id === dgGrade);
-        if(dgItem){
-          // スペースを除去して簡潔に（例：Writer Plus → WriterPlus）
-          return dgItem.name.replace(/\s+/g, '');
-        }
-      }
-      return 'FREEFORM';
-    }
-    const m = getSelectedMachine();
-    // 見積番号用は刺繍範囲サフィックスを除く
-    if(m.category === 'few'){
-      const code = `${pad2(m.needles)}${pad2(m.heads)}`;
-      return `${m.modelKey.split('C')[0]}C`;
-    }
-    return m?.modelKey || 'MODEL';
-  }
-
-  function updateMachineOutputs(){
-    const m = getSelectedMachine();
-    const cat = document.getElementById('machineCategory')?.value || m.category || 'single';
-
-    document.getElementById('machineFullOut').textContent = m.full;
-    document.getElementById('machineKeyOut').textContent = getMachineCodeForQuoteNo();
-
-    // 価格マスタがあれば自動セット
-    const unit = document.getElementById('baseUnitPrice');
-    const masterPrice = PRICE_MASTER[m.modelKey];
-
-    // 彩（SAI）は本体価格が固定運用のため、区分切替時に確実に反映させる
-    if(cat === 'sai'){
-      if(typeof masterPrice === 'number' && !Number.isNaN(masterPrice)){
-        unit.value = String(masterPrice);
-      }else{
-        unit.value = '';
-      }
-      basePriceManuallyEdited = false; // 彩は自動反映を優先（必要なら後から手入力で上書き可能）
-      return;
-    }
-
-    // 単頭機・少数頭機：未手入力のときのみ自動反映
-    if(!basePriceManuallyEdited){
-      if(typeof masterPrice === 'number' && !Number.isNaN(masterPrice)){
-        unit.value = String(masterPrice);
-      }else{
-        unit.value = '';
-      }
-    }
-  }
-
-  function onMachineChanged(){
-    updateMachineOutputs();
-    updateOptionsList(); // オプションリスト更新
-    const cat = document.getElementById('machineCategory')?.value || 'single';
-    if(cat !== 'sai') renderTFAList(); // TFA枠候補更新（彩は非表示）
-
-    // 見積番号：未手編集なら自動更新（モデル名が変わるため）
-    updateQuoteNoIfAuto();
-    applyAndRender();
-  }
-
-  function updateQuoteNoIfAuto(){
-    if(typeof quoteNoManuallyEdited === 'undefined') return;
-    if(!quoteNoManuallyEdited){
-      const q = document.getElementById('quoteNo');
-      q.value = generateQuoteNoNow();
-    }
-  }
-
-  // オプションはこのテスト版では無し
-  function getSelectedOptions(){ 
-    const options = [];
-    const m = getSelectedMachine();
-
-    // 彩（SAI）
-    if(m.category === 'sai'){
-      SAI_OPTIONS.forEach(opt=>{
-        const el = document.getElementById(`opt_${opt.id}`);
-        if(el && el.checked){
-          const qty = parseInt(document.getElementById(`opt_${opt.id}_qty`)?.value || '1', 10);
-          options.push({ name: opt.name, qty, unitPrice: opt.price, group:'machine' });
-        }
-      });
-
-      // 彩専用：あんしん定額サポート（120,000円）
-      const anshin = document.getElementById('opt_anshinSupport5y');
-      if(anshin && anshin.checked){
-        const qty = parseInt(document.getElementById('opt_anshinSupport5y_qty')?.value || '1', 10);
-        options.push({ name: '安心定額サポート（5年間）', qty, unitPrice: 120000, group:'support' });
-      }
-
-      // 値引き・特別値引き・下取り・その他は既存ロジックに任せるため後段へ
-    }
-
-    // 原反枠
-    const bffEl = document.getElementById('opt_bff');
-    if (bffEl && bffEl.checked) {
-      const bffType = document.getElementById('opt_bff_type')?.value || '';
-      const price = getBFFPrice(m, bffType);
-      const qty = parseInt(document.getElementById('opt_bff_qty')?.value || '1', 10);
-      if (price > 0) {
-        options.push({
-          name: m.category === 'single' ? `原反枠（原反枠用卓付き）${bffType}` : `原反枠 ${bffType}`,
-          qty,
-          unitPrice: price
-        });
-      }
-    }
-    
-    // LED照明
-    const ledEl = document.getElementById('opt_led');
-    if (ledEl && ledEl.checked) {
-      const price = getLEDPrice(m);
-      const qty = parseInt(document.getElementById('opt_led_qty')?.value || '1', 10);
-      if (price > 0) {
-        const spec = m.category === 'single' ? '' : ` ${m.heads}H/${m.field === '450x360' ? '360' : '500'}対応`;
-        options.push({
-          name: `LED照明${spec}`,
-          qty,
-          unitPrice: price
-        });
-      }
-    }
-    
-    // 帽子枠
-    const capEl = document.getElementById('opt_cap');
-    if (capEl && capEl.checked) {
-      const price = getCapFramePrice(m);
-      const qty = parseInt(document.getElementById('opt_cap_qty')?.value || '1', 10);
-      if (price > 0) {
-        const spec = m.category === 'few' ? ` ${m.heads}H` : '';
-        options.push({
-          name: `帽子枠${spec}`,
-          qty,
-          unitPrice: price
-        });
-      }
-    }
-    
-    // 機種限定オプション（単頭機のみ）
-    if (m.category === 'single') {
-      const modelId = document.getElementById('machineModel').value;
-      const specificOpts = MODEL_SPECIFIC_OPTIONS[modelId];
-      if (specificOpts) {
-        specificOpts.forEach(opt => {
-          const el = document.getElementById(`opt_${opt.id}`);
-          if (el && el.checked) {
-            const qty = parseInt(document.getElementById(`opt_${opt.id}_qty`)?.value || '1', 10);
-            options.push({
-          name: opt.name,
-          qty,
-          unitPrice: opt.price,
-          group: opt.group
-        });
-          }
-        });
-      }
-    }
-    
-    // 固定価格オプション（彩の場合はanshinSupport5yを除外）
-    FIXED_OPTIONS.forEach(opt => {
-      // 彩の場合、anshinSupport5yは既に上で120,000円で処理済みなのでスキップ
-      if (m.category === 'sai' && opt.id === 'anshinSupport5y') {
-        return;
-      }
-      
-      const el = document.getElementById(`opt_${opt.id}`);
-      if (el && el.checked) {
-        const qty = parseInt(document.getElementById(`opt_${opt.id}_qty`)?.value || '1', 10);
-        options.push({
-          name: opt.name,
-          qty,
-          unitPrice: opt.price,
-          group: opt.group
-        });
-      }
-    });
-    
-
-// 値引き（必ずマイナスで計上）
-const discEl = document.getElementById('opt_discount');
-if (discEl && discEl.checked) {
-  const raw = parseInt(document.getElementById('opt_discount_amount')?.value || '0', 10);
-  const amt = -Math.abs(Number.isFinite(raw) ? raw : 0);
-  if (amt !== 0) {
-    options.push({
-      name: '値引き',
-      qty: 1,
-      unitPrice: amt,
-      group: 'discount'
-    });
-  }
-}
-
-// 特別値引き（必ずマイナスで計上）
-const spEl = document.getElementById('opt_special_discount');
-if (spEl && spEl.checked) {
-  const raw = parseInt(document.getElementById('opt_special_discount_amount')?.value || '0', 10);
-  const amt = -Math.abs(Number.isFinite(raw) ? raw : 0);
-  if (amt !== 0) {
-    options.push({
-      name: '特別値引き',
-      qty: 1,
-      unitPrice: amt,
-      group: 'specialDiscount'
-    });
-  }
-}
-
-// 下取り（必ずマイナスで計上）
-const tiEl = document.getElementById('opt_tradein');
-if (tiEl && tiEl.checked) {
-  const name = (document.getElementById('opt_tradein_name')?.value || '').trim();
-  const raw = parseInt(document.getElementById('opt_tradein_amount')?.value || '0', 10);
-  const amt = -Math.abs(Number.isFinite(raw) ? raw : 0);
-  if (amt !== 0) {
-    options.push({
-      name: name ? `下取り：${name}` : '下取り',
-      qty: 1,
-      unitPrice: amt,
-      group: 'tradeIn'
-    });
-  }
-}
-
-
-    // その他オプション（任意追加対応）
-    const otherBoxes = document.querySelectorAll('#optList input[type="checkbox"][id^="opt_other"]');
-    otherBoxes.forEach(cb => {
-      if (!cb.checked) return;
-      const idx = parseInt(cb.id.replace('opt_other',''), 10);
-      if (!Number.isFinite(idx)) return;
-
-      const key = `other${idx}`;
-      const name = document.getElementById(`opt_${key}_name`)?.value.trim() || `その他${idx}`;
-      const price = parseInt(document.getElementById(`opt_${key}_price`)?.value || '0', 10);
-      const qty = parseInt(document.getElementById(`opt_${key}_qty`)?.value || '1', 10);
-      options.push({
-        name,
-        qty,
-        unitPrice: Number.isFinite(price) ? price : 0,
-        group: 'other'
-      });
-    });
-
-    // 既存項目にgroupが無い場合は machine 扱い
-    options.forEach(o=>{ if(!o.group) o.group = 'machine'; });
-
-    return options;
-  }
-
-  function getOptionModelBase(machine){
-    // オプション価格表のキーに合わせてモデル系統を正規化
-    // - TFMX-2C は型式中に「2」が含まれるため split(/\d/) だと崩れるので明示判定
-    // - TMEZ-KC は価格表側が「TMEZ-KC」ではなく「TMEZ-KC Type-2・TMEZ-KC」だが、
-    //   本コードの価格マスタは BFF_PRICES / LED_PRICES で 'TMEZ-K' キーを使用しているため寄せる
-    if(machine.category === 'single') return 'SINGLE';
-    const mk = String(machine.modelKey || '');
-    if(mk.startsWith('TFMX-2C')) return 'TFMX-2C';
-    if(mk.startsWith('TMAR-KC')) return 'TMAR-KC';
-    if(mk.startsWith('TMEZ-KC')) return 'TMEZ-K';
-    // 念のため
-    if(mk.startsWith('TMEZ-K')) return 'TMEZ-K';
-    if(mk.startsWith('TMAR-K')) return 'TMAR-KC';
-    return mk;
-  }
-
-
-
-  function getBFFPrice(machine, bffType) {
-    if (machine.category === 'single') {
-      return BFF_PRICES['SINGLE'][bffType] || 0;
-    }
-    const key = `${machine.heads}H-${machine.field === '450x360' ? '360' : '500'}`;
-    const modelBase = getOptionModelBase(machine);
-    const prices = BFF_PRICES[modelBase]?.[key];
-    return prices?.[bffType] || 0;
-  }
-
-  function getLEDPrice(machine) {
-    if (machine.category === 'single') {
-      return LED_PRICES['SINGLE'];
-    }
-    const key = `${machine.heads}H-${machine.field === '450x360' ? '360' : '500'}`;
-    const modelBase = getOptionModelBase(machine);
-    return LED_PRICES[modelBase]?.[key] || 0;
-  }
-
-  function getCapFramePrice(machine) {
-    if (machine.category === 'single') {
-      return CAP_FRAME_PRICES['SINGLE'];
-    }
-    return CAP_FRAME_PRICES['FEW'][machine.heads] || 0;
-  }
-
-  function updateOptionsList() {
-    const container = document.getElementById('optList');
-    if (!container) return;
-
-    // 「その他」入力の状態を保持（機種切替などでoptListを再描画しても維持）
-    captureOtherState();
-
-    container.innerHTML = '';
-    const m = getSelectedMachine();
-    const modelId = document.getElementById('machineModel').value;
-    
-    if (m.category === 'sai') {
-      // 彩（SAI）：価格表PDFのオプションのみを表示（TFA/DGカードは非表示）
-      SAI_OPTIONS.forEach(opt => addSaiOption(container, opt));
-      // 彩専用：あんしん定額サポート（120,000円）
-      const saiSupport = { id: 'anshinSupport5y', name: '安心定額サポート（5年間）', price: 120000, group: 'support' };
-      addFixedOption(container, saiSupport);
-      // 値引き
-      addDiscountOption(container);
-      addSpecialDiscountOption(container);
-      addTradeInOption(container);
-      renderOtherOptions(container);
-    } else if (m.category === 'single') {
-      // 単頭機の表示順
-      addBFFOption(container, m);           // 1. 原反枠
-      addCapFrameOption(container, m);       // 2. 帽子枠
-      addFixedOptionById(container, 'bagTable', m);         // 3. 袋物枠用テーブル
-      addFixedOptionById(container, 'leg', m);              // 4. 脚
-      addFixedOptionById(container, 'legTray', m);          // 5. 脚トレイ
-      addLEDOption(container, m);            // 6. LED照明
-      addFixedOptionById(container, 'positionMarker', m);   // 7. ポジションマーカー
-      addFixedOptionById(container, 'bobbinWinder', m);     // 8. 下糸巻装置
-      addFixedOptionById(container, 'laserMarker', m);      // 9. レーザークロスマーカー
-      addFixedOptionById(container, 'sockFrameSet', m);     // 10. タジマ靴下枠セット
-      addFixedOptionById(container, 'sockFrameSetMarusiki', m); // 11. 丸正式靴下枠セット
-      addFixedOptionById(container, 'mFrameKit', m);        // 12. Mフレームスターターキット
-      addFixedOptionById(container, 'mClip50', m);          // 13. Mクリップ：50
-      addFixedOptionById(container, 'mClip100', m);         // 14. Mクリップ：100
-      addFixedOptionById(container, 'multiCode', m);        // 15. マルチコード装置2
-      
-      
-      // 17. 機種限定オプション（ESQ-C、シークインⅣ）
-      const specificOpts = MODEL_SPECIFIC_OPTIONS[modelId];
-      if (specificOpts) {
-        specificOpts.forEach(opt => {
-          addModelSpecificOption(container, opt);
-        });
-      }
-      addFixedOptionById(container, 'anshinSupport5y', m);  
-      // 16 安心定額サポート（5年間）
-      // 値引き
-      addDiscountOption(container);
-      // 特別値引き / 下取り
-      addSpecialDiscountOption(container);
-      addTradeInOption(container);
-
-      // 最後に「その他」（任意追加対応）
-      renderOtherOptions(container);
-    } else {
-      // 少数頭機の表示順
-      addBFFOption(container, m);            // 1. 原反枠
-      addLEDOption(container, m);            // 2. LED照明
-      addCapFrameOption(container, m);       // 3. 帽子枠
-      addFixedOptionById(container, 'positionMarker', m);   // 4. ポジションマーカー
-      addFixedOptionById(container, 'bobbinWinder', m);     // 5. 下糸巻装置
-      
-      // 値引き
-      addDiscountOption(container);
-      // 特別値引き / 下取り
-      addSpecialDiscountOption(container);
-      addTradeInOption(container);
-
-      // 最後に「その他」（任意追加対応）
-      renderOtherOptions(container);
-    }
-  }
-
-
+  // 刺繍ソフト（DG）関連関数
   // =========================================================
-  // その他（任意追加）UI
-  // =========================================================
-  const OTHER_BASE_COUNT = 3;
-  let otherDynamic = [];
-  let otherDynamicNext = OTHER_BASE_COUNT + 1;
-  let otherStateCache = {};
-
-  function loadOtherDynamic(){
-    try{
-      otherDynamic = JSON.parse(localStorage.getItem('seiken_otherDynamic') || '[]')
-        .map(n=>parseInt(n,10))
-        .filter(n=>Number.isFinite(n) && n >= (OTHER_BASE_COUNT + 1));
-    }catch(e){ otherDynamic = []; }
-
-    try{
-      const nxt = parseInt(localStorage.getItem('seiken_otherDynamicNext') || String(OTHER_BASE_COUNT + 1), 10);
-      otherDynamicNext = (Number.isFinite(nxt) && nxt >= (OTHER_BASE_COUNT + 1)) ? nxt : (OTHER_BASE_COUNT + 1);
-    }catch(e){
-      otherDynamicNext = OTHER_BASE_COUNT + 1;
-    }
-  }
-
-  function saveOtherDynamic(){
-    try{
-      localStorage.setItem('seiken_otherDynamic', JSON.stringify(otherDynamic));
-      localStorage.setItem('seiken_otherDynamicNext', String(otherDynamicNext));
-    }catch(e){}
-  }
-
-  function captureOtherState(){
-    otherStateCache = {};
-    try{
-      const boxes = document.querySelectorAll('#optList input[type="checkbox"][id^="opt_other"]');
-      boxes.forEach(cb=>{
-        const idx = parseInt(cb.id.replace('opt_other',''), 10);
-        if(!Number.isFinite(idx)) return;
-        const key = `other${idx}`;
-        otherStateCache[idx] = {
-          checked: !!cb.checked,
-          name: document.getElementById(`opt_${key}_name`)?.value ?? '',
-          price: document.getElementById(`opt_${key}_price`)?.value ?? '',
-          qty: document.getElementById(`opt_${key}_qty`)?.value ?? '1'
-        };
-      });
-    }catch(e){}
-  }
-
-  function restoreOtherState(){
-    try{
-      Object.keys(otherStateCache).forEach(k=>{
-        const idx = parseInt(k, 10);
-        if(!Number.isFinite(idx)) return;
-        const key = `other${idx}`;
-        const st = otherStateCache[idx];
-
-        const cb = document.getElementById(`opt_${key}`);
-        if(cb) cb.checked = !!st.checked;
-
-        const nm = document.getElementById(`opt_${key}_name`);
-        const pr = document.getElementById(`opt_${key}_price`);
-        const qty = document.getElementById(`opt_${key}_qty`);
-        if(nm) nm.value = st.name ?? '';
-        if(pr) pr.value = st.price ?? '';
-        if(qty) qty.value = st.qty ?? '1';
-
-        const row = document.getElementById(`row_${key}`);
-        if(row && cb) row.className = cb.checked ? 'opt-row on' : 'opt-row off';
-      });
-    }catch(e){}
-  }
-
-  function addOtherDynamic(){
-    const idx = otherDynamicNext;
-    otherDynamicNext += 1;
-    otherDynamic.push(idx);
-    saveOtherDynamic();
-
-    const container = document.getElementById('optList');
-    if(!container) return;
-
-    const addRow = document.getElementById('row_other_add');
-    const div = addOtherOption(container, idx, true);
-    if(addRow && div){
-      container.insertBefore(div, addRow);
-    }
-    applyAndRender();
-  }
-
-  function removeOtherOption(idx){
-    idx = parseInt(idx, 10);
-    if(!Number.isFinite(idx)) return;
-
-    otherDynamic = otherDynamic.filter(n => n !== idx);
-    saveOtherDynamic();
-
-    const row = document.getElementById(`row_other${idx}`);
-    if(row) row.remove();
-
-    applyAndRender();
-  }
-
-  function addOtherAddButtonRow(container){
-    const div = document.createElement('div');
-    div.className = 'opt-row off';
-    div.id = 'row_other_add';
-    div.style.justifyContent = 'flex-start';
-
-    div.innerHTML = `
-      <div style="width:44px;"></div>
-      <div class="opt-label" style="flex:1;">
-        <button class="btn mini" type="button" onclick="addOtherDynamic()">＋その他を追加</button>
-        <span class="muted" style="margin-left:10px; font-size:12px;">必要な分だけ追加できます（帳票には選択した項目のみ出力）</span>
-      </div>
-    `;
-    container.appendChild(div);
-  }
-
-  function renderOtherOptions(container){
-    // 固定3枠
-    for(let i = 1; i <= OTHER_BASE_COUNT; i++){
-      addOtherOption(container, i, false);
-    }
-    // 追加分
-    otherDynamic.forEach(idx => {
-      addOtherOption(container, idx, true);
-    });
-    addOtherAddButtonRow(container);
-
-    // 直前の入力を復元（機種切替等でoptListを再描画しても入力を保持）
-    restoreOtherState();
-  }
-
-function addDiscountOption(container) {
-  const div = document.createElement('div');
-  div.className = 'opt-row off';
-  div.id = 'row_discount';
-
-  div.innerHTML = `
-    <label class="switch">
-      <input type="checkbox" id="opt_discount" onchange="toggleOption('discount')">
-      <span class="slider"></span>
-    </label>
-    <div class="opt-label" style="flex:1;">
-      値引き
-      <span style="font-size:12px; color:#666; margin-left:6px;">（入力した金額は必ずマイナスで表示）</span>
-      <span style="font-size:12px; color:#666; margin-left:10px;">金額：</span>
-      <input type="number" id="opt_discount_amount" class="neg-input" placeholder="0" step="1000" style="width:140px; margin-left:4px;" oninput="applyAndRender()" />
-    </div>
-    <div class="muted" style="width:80px; text-align:right;">数量 1</div>
-  `;
-
-  container.appendChild(div);
-}
-
-function addSpecialDiscountOption(container) {
-  const div = document.createElement('div');
-  div.className = 'opt-row off';
-  div.id = 'row_special_discount';
-
-  div.innerHTML = `
-    <label class="switch">
-      <input type="checkbox" id="opt_special_discount" onchange="toggleOption('special_discount')">
-      <span class="slider"></span>
-    </label>
-    <div class="opt-label" style="flex:1;">
-      特別値引き
-      <span style="font-size:12px; color:#666; margin-left:6px;">（入力した金額は必ずマイナスで表示）</span>
-      <span style="font-size:12px; color:#666; margin-left:10px;">金額：</span>
-      <input type="number" id="opt_special_discount_amount" class="neg-input" placeholder="0" step="1000" style="width:140px; margin-left:4px;" oninput="applyAndRender()" />
-    </div>
-    <div class="muted" style="width:80px; text-align:right;">数量 1</div>
-  `;
-
-  container.appendChild(div);
-}
-
-function addTradeInOption(container) {
-  const div = document.createElement('div');
-  div.className = 'opt-row off';
-  div.id = 'row_tradein';
-
-  div.innerHTML = `
-    <label class="switch">
-      <input type="checkbox" id="opt_tradein" onchange="toggleOption('tradein')">
-      <span class="slider"></span>
-    </label>
-    <div class="opt-label" style="flex:1;">
-      下取り
-      <input type="text" id="opt_tradein_name" placeholder="品名（例：TMEF-612）" style="width:200px; margin:0 8px;" oninput="applyAndRender()" />
-      <span style="font-size:12px; color:#666;">金額：</span>
-      <input type="number" id="opt_tradein_amount" class="neg-input" placeholder="0" step="1000" style="width:140px; margin:0 4px;" oninput="applyAndRender()" />
-      <span style="font-size:12px; color:#666; margin-left:6px;">（必ずマイナス）</span>
-    </div>
-    <div class="muted" style="width:80px; text-align:right;">数量 1</div>
-  `;
-
-  container.appendChild(div);
-}
-
-
-    function addOtherOption(container, idx, removable) {
-    removable = !!removable;
-    const div = document.createElement('div');
-    const key = `other${idx}`;
-    div.className = 'opt-row off';
-    div.id = `row_${key}`;
-
-    const removeBtn = removable
-      ? `<button class="btn mini" type="button" style="margin-left:8px" onclick="removeOtherOption(${idx})">削除</button>`
-      : '';
-
-    div.innerHTML = `
-      <label class="switch">
-        <input type="checkbox" id="opt_${key}" onchange="toggleOption('${key}')">
-        <span class="slider"></span>
-      </label>
-      <div class="opt-label" style="flex:1;">
-        その他${idx}
-        <input type="text" id="opt_${key}_name" placeholder="品名（例：追加枠）" style="width:200px; margin:0 8px;" oninput="applyAndRender()" />
-        <span style="font-size:12px; color:#666;">単価：</span>
-        <input type="number" id="opt_${key}_price" placeholder="0" step="1000" style="width:120px; margin:0 4px;" oninput="applyAndRender()" />
-      </div>
-      <input type="number" id="opt_${key}_qty" class="opt-qty" min="1" step="1" value="1" oninput="applyAndRender()" />
-      ${removeBtn}
-    `;
-
-    container.appendChild(div);
-    return div;
-  }
-
-
-  function addFixedOptionById(container, optId, machine) {
-    const opt = FIXED_OPTIONS.find(o => o.id === optId);
-    if (opt && opt.models.includes(machine.category)) {
-      addFixedOption(container, opt);
-    }
-  }
-
-  function addModelSpecificOption(container, opt) {
-    const div = document.createElement('div');
-    div.className = 'opt-row off';
-    div.id = `row_${opt.id}`;
-    
-    div.innerHTML = `
-      <label class="switch">
-        <input type="checkbox" id="opt_${opt.id}" onchange="toggleOption('${opt.id}')">
-        <span class="slider"></span>
-      </label>
-      <div class="opt-label">${opt.name} <span style="color:#666; font-size:12px;">${opt.price.toLocaleString()}</span></div>
-      <input type="number" id="opt_${opt.id}_qty" class="opt-qty" min="1" step="1" value="1" oninput="applyAndRender()" />
-    `;
-    
-    container.appendChild(div);
-  }
-
-  function addBFFOption(container, machine) {
-    const div = document.createElement('div');
-    div.className = 'opt-row off';
-    div.id = 'row_bff';
-    
-    let selectHTML = '';
-    let defaultType = '';
-    
-    if (machine.category === 'single') {
-      // 単頭機：2種類
-      selectHTML = `
-        <select id="opt_bff_type" style="width:140px; margin-left:8px;" onchange="onOptionChange('bff')">
-          <option value="BFF3+BFF8">BFF3+BFF8</option>
-          <option value="BFF2+BFF4">BFF2+BFF4</option>
-        </select>
-      `;
-      defaultType = 'BFF3+BFF8';
-    } else if (machine.modelKey.startsWith('TFMX-2C')) {
-      // TFMX-2C：固定
-      selectHTML = '<span style="margin-left:8px; font-size:12px; color:#666;">(BFF2+BFF6 固定)</span>';
-      defaultType = 'BFF2+BFF6';
-    } else {
-      // TMAR-KC / TMEZ-KC：3種類
-      selectHTML = `
-        <select id="opt_bff_type" style="width:140px; margin-left:8px;" onchange="onOptionChange('bff')">
-          <option value="BFF3+BFF8">BFF3+BFF8</option>
-          <option value="BFF2+BFF4">BFF2+BFF4</option>
-          <option value="BFF2+BFF6">BFF2+BFF6</option>
-        </select>
-      `;
-      defaultType = 'BFF3+BFF8';
-    }
-    
-    const price = getBFFPrice(machine, defaultType);
-    const labelText = machine.category === 'single' ? '原反枠（原反枠用卓付き）' : '原反枠';
-    
-    div.innerHTML = `
-      <label class="switch">
-        <input type="checkbox" id="opt_bff" onchange="toggleOption('bff')">
-        <span class="slider"></span>
-      </label>
-      <div class="opt-label">${labelText}${selectHTML} <span style="color:#666; font-size:12px;">${price.toLocaleString()}</span></div>
-      <input type="number" id="opt_bff_qty" class="opt-qty" min="1" step="1" value="1" oninput="applyAndRender()" />
-    `;
-    
-    container.appendChild(div);
-  }
-
-  function addLEDOption(container, machine) {
-    const div = document.createElement('div');
-    div.className = 'opt-row off';
-    div.id = 'row_led';
-    
-    const price = getLEDPrice(machine);
-    const spec = machine.category === 'single' ? '' : ` (${machine.heads}H/${machine.field === '450x360' ? '360' : '500'}対応)`;
-    
-    div.innerHTML = `
-      <label class="switch">
-        <input type="checkbox" id="opt_led" onchange="toggleOption('led')">
-        <span class="slider"></span>
-      </label>
-      <div class="opt-label">LED照明${spec} <span style="color:#666; font-size:12px;">${price.toLocaleString()}</span></div>
-      <input type="number" id="opt_led_qty" class="opt-qty" min="1" step="1" value="1" oninput="applyAndRender()" />
-    `;
-    
-    container.appendChild(div);
-  }
-
-  function addCapFrameOption(container, machine) {
-    const div = document.createElement('div');
-    div.className = 'opt-row off';
-    div.id = 'row_cap';
-    
-    const price = getCapFramePrice(machine);
-    const spec = machine.category === 'few' ? ` (${machine.heads}H)` : '';
-    
-    div.innerHTML = `
-      <label class="switch">
-        <input type="checkbox" id="opt_cap" onchange="toggleOption('cap')">
-        <span class="slider"></span>
-      </label>
-      <div class="opt-label">帽子枠${spec} <span style="color:#666; font-size:12px;">${price.toLocaleString()}</span></div>
-      <input type="number" id="opt_cap_qty" class="opt-qty" min="1" step="1" value="1" oninput="applyAndRender()" />
-    `;
-    
-    container.appendChild(div);
-  }
-
-  function addFixedOption(container, opt) {
-    const div = document.createElement('div');
-    div.className = 'opt-row off';
-    div.id = `row_${opt.id}`;
-    
-    div.innerHTML = `
-      <label class="switch">
-        <input type="checkbox" id="opt_${opt.id}" onchange="toggleOption('${opt.id}')">
-        <span class="slider"></span>
-      </label>
-      <div class="opt-label">${opt.name} <span style="color:#666; font-size:12px;">${opt.price.toLocaleString()}</span></div>
-      <input type="number" id="opt_${opt.id}_qty" class="opt-qty" min="1" step="1" value="1" oninput="applyAndRender()" />
-    `;
-    
-    container.appendChild(div);
-  }
-
-  // 彩（SAI）用：シンプルな固定価格オプションを描画
-  function addSaiOption(container, opt){
-    addFixedOption(container, { id: opt.id, name: opt.name, price: opt.price });
-  }
-
-
-  function toggleOption(optId) {
-    const row = document.getElementById(`row_${optId}`);
-    const checkbox = document.getElementById(`opt_${optId}`);
-    if (row && checkbox) {
-      row.className = checkbox.checked ? 'opt-row on' : 'opt-row off';
-    }
-    applyAndRender();
-  }
-
-  function onOptionChange(optId) {
-    // 原反枠の種類変更時に価格を更新
-    if (optId === 'bff') {
-      const m = getSelectedMachine();
-      const bffType = document.getElementById('opt_bff_type')?.value || '';
-      const price = getBFFPrice(m, bffType);
-      const row = document.getElementById('row_bff');
-      if (row) {
-        const priceSpan = row.querySelector('.opt-label span');
-        if (priceSpan) {
-          priceSpan.textContent = `${price.toLocaleString()}`;
-        }
-      }
-    }
-    applyAndRender();
-  }
-
-  function updateOptionSummary() {
-    const summary = document.getElementById('optSummary');
-    if (!summary) return;
-    
-    const opts = getSelectedOptions();
-    const count = opts.length;
-    const total = opts.reduce((sum, opt) => sum + (opt.unitPrice * opt.qty), 0);
-    
-    if (count === 0) {
-      summary.textContent = '';
-    } else {
-      summary.textContent = `${count}項目選択中 / 合計 ${total.toLocaleString()}`;
-    }
-  }
-
-  // =========================================================
-  // 刺繍ソフト（DG）UI
-  // =========================================================
-  function gradeIndex(gradeId){
-    // DG-S は比較対象外（別枠）
-    const order = ['EXPRESS','COMPOSER','CREATOR','ILLUSTRATOR_EXTREME','ARTIST_PLUS','MAESTRO'];
-    return order.indexOf(gradeId);
-  }
-
-  function isGradeAtLeast(selectedId, minId){
-    const s = gradeIndex(selectedId);
-    const m = gradeIndex(minId);
-    if(s < 0 || m < 0) return false;
-    return s >= m;
-  }
-
-  function getSelectedDG(){
-    const id = document.getElementById('dgGrade')?.value || '';
-    if(!id) return null;
-    return DG_SOFTWARE.find(x => x.id === id) || null;
-  }
-
+  
   function renderDGSelect(){
     const sel = document.getElementById('dgGrade');
     if(!sel) return;
-    sel.innerHTML = '';
-    const none = document.createElement('option');
-    none.value = '';
-    none.textContent = '選択しない';
-    sel.appendChild(none);
-    DG_SOFTWARE.forEach(s => {
-      const o = document.createElement('option');
-      o.value = s.id;
-      o.textContent = `${s.name}${s.price ? `（${s.price.toLocaleString()}）` : ''}`;
-      sel.appendChild(o);
+    sel.innerHTML = '<option value="">選択してください</option>';
+    DG_SOFTWARE.forEach(dg => {
+      const opt = document.createElement('option');
+      opt.value = dg.id;
+      opt.textContent = `${dg.name} ￥${dg.price.toLocaleString()}`;
+      sel.appendChild(opt);
     });
+  }
+
+  function getSelectedDG(){
+    const sel = document.getElementById('dgGrade');
+    const id = sel?.value || '';
+    return DG_SOFTWARE.find(d => d.id === id) || null;
+  }
+
+  function isGradeAtLeast(currentGrade, minGrade){
+    const order = ['WRITER_PLUS','EXPRESS','COMPOSER','CREATOR','ILLUSTRATOR_EXTREME','ARTIST_PLUS','MAESTRO','DG_S'];
+    const ci = order.indexOf(currentGrade);
+    const mi = order.indexOf(minGrade);
+    if(ci < 0 || mi < 0) return false;
+    return ci >= mi;
+  }
+
+  function toggleDGItem(prefix, id){
+    const cb = document.getElementById(`${prefix}_${id}`);
+    const row = document.getElementById(`${prefix}_row_${id}`);
+    if(cb && row){
+      row.className = cb.checked ? 'opt-row on' : 'opt-row off';
+    }
+    updateDGSummary();
+    applyAndRender();
   }
 
   function renderDGToggleItem(container, item, prefix){
     const div = document.createElement('div');
     div.className = 'opt-row off';
     div.id = `${prefix}_row_${item.id}`;
+
     div.innerHTML = `
       <label class="switch">
         <input type="checkbox" id="${prefix}_${item.id}" onchange="toggleDGItem('${prefix}','${item.id}')">
         <span class="slider"></span>
       </label>
-      <div class="opt-label">${item.name} <span style="color:#666; font-size:12px;">${item.price.toLocaleString()}</span></div>
+      <div class="opt-label">
+        ${item.name}
+        <span style="color:#666; font-size:12px; margin-left:6px;">￥${item.price.toLocaleString()}</span>
+      </div>
       <input type="number" id="${prefix}_${item.id}_qty" class="opt-qty" min="1" step="1" value="1" oninput="applyAndRender()" />
     `;
-    container.appendChild(div);
-  }
 
-  function toggleDGItem(prefix, itemId){
-    const row = document.getElementById(`${prefix}_row_${itemId}`);
-    const checkbox = document.getElementById(`${prefix}_${itemId}`);
-    if(row && checkbox){
-      row.className = checkbox.checked ? 'opt-row on' : 'opt-row off';
-    }
-    applyAndRender();
+    container.appendChild(div);
   }
 
   function clearDGSelections(prefix){
@@ -2994,7 +1376,6 @@ function addTradeInOption(container) {
 
     if(!optList || !fontList || !lanList) return;
 
-    // 未選択なら全非表示
     if(!dg){
       optPanel.style.display = 'none';
       fontPanel.style.display = 'none';
@@ -3006,7 +1387,6 @@ function addTradeInOption(container) {
       return;
     }
 
-    // オプション／フォント
     optPanel.style.display = dg.optionsEnabled ? '' : 'none';
     if(lessonRow) lessonRow.style.display = dg.optionsEnabled ? '' : 'none';
     if(!dg.optionsEnabled){
@@ -3025,11 +1405,9 @@ function addTradeInOption(container) {
       DG_FONTS.filter(it => isGradeAtLeast(dg.id, it.minGrade)).forEach(it => renderDGToggleItem(fontList, it, 'dgfont'));
     }
 
-    // 旧選択をクリア（グレード変えて残る事故防止）
     clearDGSelections('dgopt');
     clearDGSelections('dgfont');
 
-    // LAN（ルールに応じて候補切替）
     lanPanel.style.display = '';
     lanList.innerHTML = '';
     if(dg.lanRule === 'WP'){
@@ -3065,6 +1443,16 @@ function addTradeInOption(container) {
     return [{ name, qty, unitPrice: lan.price }];
   }
 
+  function getSelectedDGLessonItem(){
+    const cb = document.getElementById('dgopt_DG_LESSON');
+    if(!cb || !cb.checked) return null;
+    const priceEl = document.getElementById('dgopt_DG_LESSON_price');
+    const qtyEl = document.getElementById('dgopt_DG_LESSON_qty');
+    const unitPrice = Math.max(0, parseInt(priceEl?.value || '0', 10)) || 0;
+    const qty = Math.max(1, parseInt(qtyEl?.value || '1', 10)) || 1;
+    return { name:'DG講習費用', qty, unitPrice };
+  }
+
   function updateDGSummary(){
     const dg = getSelectedDG();
     const optS = document.getElementById('dgOptSummary');
@@ -3085,9 +1473,9 @@ function addTradeInOption(container) {
 
     const sum = arr => arr.reduce((s,it)=>s + (it.unitPrice* (Number(it.qty)||0)),0);
 
-    if(optS) optS.textContent = optItems.length ? `${optItems.length}項目 / 合計 ${sum(optItems).toLocaleString()}` : '';
-    if(fontS) fontS.textContent = fontItems.length ? `${fontItems.length}項目 / 合計 ${sum(fontItems).toLocaleString()}` : '';
-    if(lanS)  lanS.textContent = lanItems.length ? `合計 ${sum(lanItems).toLocaleString()}` : '';
+    if(optS) optS.textContent = optItems.length ? `${optItems.length}項目 / 合計 ¥${sum(optItems).toLocaleString()}` : '';
+    if(fontS) fontS.textContent = fontItems.length ? `${fontItems.length}項目 / 合計 ¥${sum(fontItems).toLocaleString()}` : '';
+    if(lanS)  lanS.textContent = lanItems.length ? `合計 ¥${sum(lanItems).toLocaleString()}` : '';
   }
 
   function initDGSoftwareUI(){
@@ -3096,7 +1484,6 @@ function addTradeInOption(container) {
     if(sel){
       sel.addEventListener('change', ()=>{
         renderDGLists();
-        // DGグレード変更時、見積番号が未編集なら自動更新
         const q = document.getElementById('quoteNo');
         if(!quoteNoManuallyEdited){
           q.value = generateQuoteNoNow();
@@ -3105,10 +1492,8 @@ function addTradeInOption(container) {
       });
     }
 
-    // 初期は非表示
     renderDGLists();
 
-    // 各パネルを閉じておく（起動時クローズ運用）
     const optPanel = document.getElementById('dgOptPanel');
     const fontPanel = document.getElementById('dgFontPanel');
     const lanPanel = document.getElementById('dgLanPanel');
@@ -3117,30 +1502,68 @@ function addTradeInOption(container) {
     if(lanPanel) lanPanel.open = false;
   }
 
-  // BASE_ITEM / MODEL_LINES は buildLineItems 内で動的生成します
-  // =========================
-  // FREEFORM 明細（商品行／行）
-  // =========================
+  function resetDGSoftwareSection(){
+    const grade = document.getElementById("dgGrade");
+    const qty = document.getElementById("dgQty");
+
+    if(qty) qty.value = "1";
+    if(grade) grade.value = "";
+
+    ["dgopt","dgfont","dglan"].forEach(prefix=>{
+      try{
+        clearDGSelections(prefix);
+      }catch(e){}
+    });
+
+    try{
+      renderDGLists();
+    }catch(e){}
+
+    const lcb = document.getElementById('dgopt_DG_LESSON');
+    const lprice = document.getElementById('dgopt_DG_LESSON_price');
+    const lqty = document.getElementById('dgopt_DG_LESSON_qty');
+    if(lcb) lcb.checked = false;
+    if(lprice) lprice.value = '0';
+    if(lqty) lqty.value = '1';
+    const lrow = document.getElementById('dgopt_row_DG_LESSON');
+    if(lrow) lrow.className = 'opt-row off';
+
+    const optPanel = document.getElementById("dgOptPanel");
+    const fontPanel = document.getElementById("dgFontPanel");
+    const lanPanel = document.getElementById("dgLanPanel");
+    if(optPanel) optPanel.open = false;
+    if(fontPanel) fontPanel.open = false;
+    if(lanPanel) lanPanel.open = false;
+
+    try{
+      updateDGSummary();
+    }catch(e){}
+    
+    applyAndRender();
+  }
+
+  // =========================================================
+  // フリーフォーム明細
+  // =========================================================
   let freeformLines = [];
 
   function loadFreeform(){
     try{
-      const raw = localStorage.getItem('seiken_freeform_lines_v1');
+      const raw = localStorage.getItem('seiken_dgnet_freeform_lines');
       if(raw){
         const arr = JSON.parse(raw);
         if(Array.isArray(arr)) freeformLines = arr;
       }
     }catch(e){}
     if(!Array.isArray(freeformLines)) freeformLines = [];
-    // 最低1行はないと寂しいので、最初は空でOK（ユーザー操作で追加）
   }
 
   function saveFreeform(){
-    try{ localStorage.setItem('seiken_freeform_lines_v1', JSON.stringify(freeformLines)); }catch(e){}
+    try{ localStorage.setItem('seiken_dgnet_freeform_lines', JSON.stringify(freeformLines)); }catch(e){}
   }
 
   function resetFreeform(){
-    if(!confirm('明細（フリーフォーム）をリセットしますか？')) return;
+    if(!confirm('フリーフォーム明細をリセットしますか？')) return;
     freeformLines = [];
     saveFreeform();
     renderFreeform();
@@ -3186,7 +1609,7 @@ function addTradeInOption(container) {
 
     if(freeformLines.length === 0){
       box.innerHTML = `<div class="muted" style="padding:10px; border:1px dashed #ccc; border-radius:10px;">
-        まだ明細がありません。「商品行を追加」「行を追加する」から追加してください。
+        まだ明細がありません。「商品行を追加」「テキスト行を追加」から追加してください。
       </div>`;
       return;
     }
@@ -3205,7 +1628,7 @@ function addTradeInOption(container) {
           <div class="opt-row off" style="align-items:center; gap:8px;">
             <div class="opt-label" style="flex:1; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
               <span style="font-weight:700;">商品行</span>
-              <input type="text" value="${escapeHtml(ln.name ?? '')}" placeholder="品名" style="width:320px;" oninput="onFreeformChangeName(${i}, this.value)" />
+              <input type="text" value="${escapeHtml(ln.name ?? '')}" placeholder="品名（例：DG16）" style="width:320px;" oninput="onFreeformChangeName(${i}, this.value)" />
               <span style="font-size:12px; color:#666;">数量</span>
               <input type="number" value="${qty}" min="0" step="1" style="width:90px;" oninput="onFreeformChangeQty(${i}, this.value)" />
               <span style="font-size:12px; color:#666;">単価</span>
@@ -3218,8 +1641,8 @@ function addTradeInOption(container) {
         return `
           <div class="opt-row off" style="align-items:center; gap:8px;">
             <div class="opt-label" style="flex:1; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
-              <span style="font-weight:700;">行</span>
-              <input type="text" value="${escapeHtml(ln.name ?? '')}" placeholder="品名 / 仕様メモ（数量・金額は空欄）" style="width:520px;" oninput="onFreeformChangeText(${i}, this.value)" />
+              <span style="font-weight:700;">テキスト行</span>
+              <input type="text" value="${escapeHtml(ln.name ?? '')}" placeholder="説明文（数量・金額は空欄）" style="width:520px;" oninput="onFreeformChangeText(${i}, this.value)" />
             </div>
             <div style="display:flex; gap:6px;">${upDown}</div>
           </div>
@@ -3254,274 +1677,280 @@ function addTradeInOption(container) {
       .replaceAll("'","&#39;");
   }
 
-  function buildLineItemsFreeform(){
+  function buildLineItems(){
     const lines = [];
+    
+    // 刺繍ソフト（DG）
+    const dg = getSelectedDG();
+    if(dg){
+      const dgQty = Math.max(1, parseInt(document.getElementById('dgQty')?.value || '1', 10));
+      lines.push({
+        name: `刺繍ソフト：${dg.name}`,
+        qty: dgQty,
+        unitPrice: dg.price,
+        displayGroup: 'その他'
+      });
 
-    // FREEFORM 明細を先に追加
+      if(dg.optionsEnabled){
+        const optMaster = DG_OPTIONS.filter(it => isGradeAtLeast(dg.id, it.minGrade));
+        const lesson = getSelectedDGLessonItem();
+        if(lesson){
+          lines.push({
+            name: lesson.name,
+            qty: lesson.qty,
+            unitPrice: lesson.unitPrice,
+            displayGroup: 'その他'
+          });
+        }
+        getSelectedDGItems('dgopt', optMaster).forEach(it => {
+          lines.push({
+            name: it.name,
+            qty: it.qty,
+            unitPrice: it.unitPrice,
+            displayGroup: 'その他'
+          });
+        });
+      }
+      if(dg.fontsEnabled){
+        const fontMaster = DG_FONTS.filter(it => isGradeAtLeast(dg.id, it.minGrade));
+        getSelectedDGItems('dgfont', fontMaster).forEach(it => {
+          lines.push({
+            name: it.name,
+            qty: it.qty,
+            unitPrice: it.unitPrice,
+            displayGroup: 'その他'
+          });
+        });
+      }
+      getSelectedDGLan(dg).forEach(it => {
+        lines.push({
+          name: it.name,
+          qty: it.qty,
+          unitPrice: it.unitPrice,
+          displayGroup: 'その他'
+        });
+      });
+    }
+    
+    // DG.NET.SaaS サービスベース
+    const baseId = document.getElementById('dgnetBase').value;
+    if(baseId){
+      const base = DGNET_SAAS_BASE.find(b => b.id === baseId);
+      if(base){
+        lines.push({
+          name: `${base.name}（年間ジョブ数${base.jobCount.toLocaleString()}）`,
+          qty: 1,
+          unitPrice: base.price,
+          billingType: base.billingType,
+          displayGroup: '年間費用'
+        });
+      }
+    }
+
+    // DG.NET.SaaS オプション
+    const options = getSelectedDGNetOptions();
+    options.forEach(opt => {
+      lines.push({
+        name: opt.name,
+        qty: opt.qty,
+        unitPrice: opt.unitPrice,
+        billingType: opt.billingType,
+        displayGroup: (opt.billingType === 'annual') ? '年間費用' : '初期費用'
+      });
+    });
+
+    // フリーフォーム明細
     (freeformLines || []).forEach(ln => {
       if(!ln) return;
       if(ln.type === 'product'){
         const name = (ln.name ?? '').trim();
         const qty = (ln.qty ?? 0);
         const unit = (ln.unitPrice ?? 0);
-        // 空でも行として残したい場合があるので、name空はスキップしない
-        lines.push({ name: name, qty: qty === 0 ? '' : qty, unitPrice: unit === 0 ? '' : unit });
+        lines.push({
+          name: name,
+          qty: qty === 0 ? '' : qty,
+          unitPrice: unit === 0 ? '' : unit,
+          displayGroup: 'その他'
+        });
       }else{
         const name = (ln.name ?? '').trim();
-        lines.push({ name: name, qty:'', unitPrice:'' });
+        lines.push({ name: name, qty:'', unitPrice:'', displayGroup: 'その他' });
       }
     });
-
-    // DG（刺繍ソフト）をフリーフォームの後に追加
-    const dg = getSelectedDG();
-    if(dg){
-      const dgQty = Math.max(1, parseInt(document.getElementById('dgQty')?.value || '1', 10));
-      lines.push({ name: `刺繍ソフト:${dg.name}`, qty: dgQty, unitPrice: dg.price });
-
-      if(dg.optionsEnabled){
-        const optMaster = DG_OPTIONS.filter(it => isGradeAtLeast(dg.id, it.minGrade));
-        const lesson = getSelectedDGLessonItem();
-        if(lesson) lines.push(lesson);
-        getSelectedDGItems('dgopt', optMaster).forEach(it => lines.push(it));
-      }
-      if(dg.fontsEnabled){
-        const fontMaster = DG_FONTS.filter(it => isGradeAtLeast(dg.id, it.minGrade));
-        getSelectedDGItems('dgfont', fontMaster).forEach(it => lines.push(it));
-      }
-      getSelectedDGLan(dg).forEach(it => lines.push(it));
-    }
 
     return lines;
   }
-
-  function buildLineItems(){
-    if(typeof FREEFORM_MODE !== 'undefined' && FREEFORM_MODE){
-      return buildLineItemsFreeform();
-    }
-    const lines = [];
-    const m = getSelectedMachine();
-
-    const baseQty = Math.max(1, parseInt(document.getElementById('baseQty').value || '1', 10));
-    const unit = parseInt(document.getElementById('baseUnitPrice').value || '0', 10);
-
-    // 本体
-    const baseName = m.displayName;
-    lines.push({ name: baseName, qty: baseQty, unitPrice: Number.isFinite(unit) ? unit : 0 });
-
-    // 型式
-    lines.push({ name: `型式：${m.full}`, qty:'', unitPrice:'' });
-
-    // 彩の標準付属品（固定表示）
-    if(m.category === 'sai'){
-      lines.push({ name: '標準付属：袋物枠 200×300、100×100 各1個付', qty:'', unitPrice:'' });
-      lines.push({ name: '標準付属：データ作成ソフト「WriterPlus」', qty:'', unitPrice:'' });
-      lines.push({ name: '標準付属：日本語フォント（楷書体、太ゴシック体）', qty:'', unitPrice:'' });
-    }
-
-    // 機械オプション群
-    const opts = getSelectedOptions();
-    opts.filter(o=>o.group === 'machine').forEach(o=>{
-      lines.push({ name:o.name, qty:o.qty, unitPrice:o.unitPrice });
-    });
-
-    // その他（任意・プラス系）も「機械オプション扱い」で、TFA枠より上に表示
-    opts.filter(o=>o.group === 'other').forEach(o=>{
-      lines.push({ name:o.name, qty:o.qty, unitPrice:o.unitPrice });
-    });
-
-    // 刺繍枠（TFA/TFA2）は彩では非表示
-    if(m.category !== 'sai'){
-      // 刺繍枠（TFA/TFA2）は機械オプション（＋その他）の直下
-      getSelectedTFAItems().forEach(it => lines.push(it));
-    }
-
-    // 刺繍ソフト（DG）は彩でも表示可能
-    const dg = getSelectedDG();
-    if(dg){
-      const dgQty = Math.max(1, parseInt(document.getElementById('dgQty')?.value || '1', 10));
-      lines.push({ name: `刺繍ソフト：${dg.name}`, qty: dgQty, unitPrice: dg.price });
-
-      if(dg.optionsEnabled){
-        const optMaster = DG_OPTIONS.filter(it => isGradeAtLeast(dg.id, it.minGrade));
-        const lesson = getSelectedDGLessonItem();
-        if(lesson) lines.push(lesson);
-        getSelectedDGItems('dgopt', optMaster).forEach(it => lines.push(it));
-      }
-      if(dg.fontsEnabled){
-        const fontMaster = DG_FONTS.filter(it => isGradeAtLeast(dg.id, it.minGrade));
-        getSelectedDGItems('dgfont', fontMaster).forEach(it => lines.push(it));
-      }
-      getSelectedDGLan(dg).forEach(it => lines.push(it));
-    }
-
-    // 安心定額サポート（5年間） ※値引きの上に表示
-    opts.filter(o=>o.group === 'support').forEach(o=> lines.push({ name:o.name, qty:o.qty, unitPrice:o.unitPrice }));
-
-
-    // 値引き・特別値引き・下取り
-    opts.filter(o=>o.group === 'discount').forEach(o=> lines.push({ name:o.name, qty:o.qty, unitPrice:o.unitPrice }));
-    opts.filter(o=>o.group === 'specialDiscount').forEach(o=> lines.push({ name:o.name, qty:o.qty, unitPrice:o.unitPrice }));
-    opts.filter(o=>o.group === 'tradeIn').forEach(o=> lines.push({ name:o.name, qty:o.qty, unitPrice:o.unitPrice }));
-    // 運送据付費
-    lines.push(getRegionItem());
-
-    return lines;
-  }
-
-  function getRegionItem(){
-    const region = document.getElementById('region').value;
-    const other = document.getElementById('regionOtherPrice');
-
-    const cat = document.getElementById('machineCategory') ? document.getElementById('machineCategory').value : 'single';
-
-    // 少数頭機は基本「その他（手入力）」運用
-    if(cat === 'few'){
-      const val = Math.max(0, parseInt(other.value || '0', 10));
-      return { name: '運送据付・セットアップ及び講習費用（少数頭機）', qty: 1, unitPrice: val };
-    }
-
-    // 彩用の運送費（PDFに基づく）
-    const mapSai = { 
-      sai_kinki: 60000,
-      sai_chugoku: 90000,
-      sai_shikoku: 100000,
-      sai_kyushu: 145000  // 130,000～160,000円の中間値
-    };
-    
-    // 単頭機用の運送費
-    const mapSingle = { 
-      kinki: 100000,
-      chugoku: 130000,
-      shikoku: 140000,
-      kyushu: 170000
-    };
-    
-    if(region === 'other'){
-      const val = Math.max(0, parseInt(other.value || '0', 10));
-      return { name: '運送据付・セットアップ及び講習費用', qty: 1, unitPrice: val };
-    }
-    
-    // 彩の地域を選択した場合
-    if(region.startsWith('sai_')){
-      return { name: '運送据付・セットアップ及び講習費用（彩）', qty: 1, unitPrice: mapSai[region] ?? 0 };
-    }
-    
-    // 単頭機の地域を選択した場合
-    return { name: '運送据付・セットアップ及び講習費用', qty: 1, unitPrice: mapSingle[region] ?? 0 };
-  }
-
-  function buildToText(){
-    const base = (document.getElementById('toBase').value || '').trim();
-    const honor = document.getElementById('toHonorific').value;
-    if(!base) return `株式会社　＿＿＿＿　${honor}`;
-    return `${base}　${honor}`;
-  }
-
-  function onIssueDateChange(){
-    applyAndRender();
-  }
-
-  const TAX_RATE = 0.10;
 
   function yen(n){
-    if(!Number.isFinite(n)) return '0';
-    const abs = Math.abs(n);
-    const s = abs.toLocaleString('ja-JP');
-    return s;
-  }
-
-  function formatReiwa(yyyymmdd){
-    if(!yyyymmdd) return '令和 -- 年 -- 月 -- 日';
-    const [y, m, d] = yyyymmdd.split('-').map(Number);
-    if(!y || !m || !d) return '令和 -- 年 -- 月 -- 日';
-    const reiwa = y - 2018;
-    if(reiwa < 1) return `令和 -- 年 ${m} 月 ${d} 日`;
-    return `令和 ${reiwa} 年 ${m} 月 ${d} 日`;
+    if(typeof n !== 'number') return '';
+    return n.toLocaleString();
   }
 
   function applyAndRender(){
-    updateTFASummary();
-    const regionEl = document.getElementById('region');
-    const other = document.getElementById('regionOtherPrice');
-    const cat = document.getElementById('machineCategory') ? document.getElementById('machineCategory').value : 'single';
+    const issueDate = document.getElementById('issueDate').value;
+    const toBase = document.getElementById('toBase').value.trim();
+    const toHonorific = document.getElementById('toHonorific').value;
+    const tantou = document.getElementById('tantouSelect').value;
+    const delivery = document.getElementById('delivery').value;
+    const payment = document.getElementById('payment').value;
+    const valid = document.getElementById('valid').value;
+    const notes = document.getElementById('notes').value;
 
-    // 少数頭機は基本「その他（手入力）」運用
-    if(cat === 'few'){
-      if(regionEl.value !== 'other') regionEl.value = 'other';
-      other.disabled = false;
-    }else{
-      other.disabled = regionEl.value !== 'other';
+    const seidNo = document.getElementById('seidNo').value.trim();
+    const quoteNo = document.getElementById('quoteNo').value.trim();
+
+    let dateDisp = '';
+    if(issueDate){
+      const d = new Date(issueDate);
+      const era = d.getFullYear() >= 2019 ? '令和' : '平成';
+      const year = d.getFullYear() >= 2019 ? d.getFullYear() - 2018 : d.getFullYear() - 1988;
+      dateDisp = `${era} ${year} 年 ${d.getMonth()+1} 月 ${d.getDate()} 日`;
     }
 
-    const region = regionEl.value;
+    const noDisp = seidNo ? `No.${seidNo}` : (quoteNo || 'No.--MODEL----------');
 
-    // 刺繍ソフト（DG）サマリー更新
-    updateDGSummary();
-
-    const quoteNo = (document.getElementById('quoteNo').value || '').trim();
-    const seidNo = (document.getElementById('seidNo').value || '').trim();
-    const issueDate = document.getElementById('issueDate').value;
-
-    const delivery = document.getElementById('delivery').value.trim() || '受注後 約3カ月';
-    const place = buildPlaceText();
-    const payment = document.getElementById('payment').value.trim() || '納入時 現金一括払い';
-    const valid = document.getElementById('valid').value.trim() || '30日';
-
-    const notes = document.getElementById('notes').value.trim() || '';
-    const tantou = document.getElementById('tantouSelect').value;
-
-    document.getElementById('outTo').textContent = buildToText();
-    
-    
-    // SEID番号のみ表示（管理番号は帳票に記載しない）
-    const noText = seidNo ? `No.${seidNo}` : 'No.';
-    document.getElementById('outNo').textContent = noText;
-    
-    document.getElementById('outDate').textContent = formatReiwa(issueDate);
-
-    document.getElementById('outDelivery').textContent = delivery;
-    document.getElementById('outPlace').textContent = place;
-    document.getElementById('outPayment').textContent = payment;
+    document.getElementById('outNo').textContent = noDisp;
+    document.getElementById('outDate').textContent = dateDisp;
+    document.getElementById('outTo').textContent = toBase ? `${toBase}　${toHonorific}` : '株式会社　＿＿＿＿　御中';
+    document.getElementById('outDelivery').textContent = delivery || '受注後 約3カ月';
+    document.getElementById('outPlace').textContent = buildPlaceText();
+    document.getElementById('outPayment').textContent = payment || '納入時 現金一括払い';
     document.getElementById('outValid').textContent = valid;
-
-    document.getElementById('outTantou').textContent = `${tantou || '＿＿＿＿'}`;
+    document.getElementById('outTantou').textContent = `担当者　${tantou || '＿＿＿＿'}`;
     document.getElementById('outNotes').textContent = notes;
-    
-    // オプションサマリー更新
-    updateOptionSummary();
 
     const lines = buildLineItems();
     const tbody = document.getElementById('outItems');
     tbody.innerHTML = '';
 
-    let subtotal = 0;
+    // 年間費用と初期費用に分ける
+    const annualLines = lines.filter(l => l.displayGroup === '年間費用');
+    const setupLines = lines.filter(l => l.displayGroup === '初期費用');
+    const otherLines = lines.filter(l => l.displayGroup === 'その他');
 
-    lines.forEach(li=>{
+    let annualTotal = 0;
+    let setupTotal = 0;
+
+    // 年間費用セクション
+    if(annualLines.length > 0){
+      const headerTr = document.createElement('tr');
+      headerTr.innerHTML = '<td colspan="4" style="background:#e8e8e8; font-weight:700;">DG.NET SaaS サービスベース</td>';
+      tbody.appendChild(headerTr);
+
+      annualLines.forEach(li => {
+        const tr = document.createElement('tr');
+        const tdDesc = document.createElement('td');
+        tdDesc.className = 'desc';
+        tdDesc.textContent = li.name;
+
+        const tdQty = document.createElement('td');
+        tdQty.className = 'c-qty';
+        tdQty.textContent = li.qty;
+
+        const tdUnit = document.createElement('td');
+        tdUnit.className = 'c-unit';
+
+        const tdAmt = document.createElement('td');
+        tdAmt.className = 'c-amt';
+
+        if(typeof li.unitPrice === 'number'){
+          tdUnit.textContent = yen(li.unitPrice);
+          const qty = (typeof li.qty === 'number') ? li.qty : 1;
+          const amt = li.unitPrice * qty;
+          tdAmt.textContent = yen(amt);
+          annualTotal += amt;
+        } else {
+          tdUnit.textContent = '';
+          tdAmt.textContent = '';
+        }
+
+        tr.appendChild(tdDesc);
+        tr.appendChild(tdQty);
+        tr.appendChild(tdUnit);
+        tr.appendChild(tdAmt);
+        tbody.appendChild(tr);
+      });
+
+      // 年間費用合計
+      const subtotalTr = document.createElement('tr');
+      subtotalTr.className = 'section-subtotal';
+      subtotalTr.innerHTML = `
+        <td colspan="3" style="text-align:right; font-weight:800;">■年間費用合計</td>
+        <td class="c-amt" style="font-weight:800;">${yen(annualTotal)}</td>
+      `;
+      tbody.appendChild(subtotalTr);
+    }
+
+    // 初期費用セクション
+    if(setupLines.length > 0){
+      setupLines.forEach(li => {
+        const tr = document.createElement('tr');
+        const tdDesc = document.createElement('td');
+        tdDesc.className = 'desc';
+        tdDesc.textContent = li.name;
+
+        const tdQty = document.createElement('td');
+        tdQty.className = 'c-qty';
+        tdQty.textContent = li.qty;
+
+        const tdUnit = document.createElement('td');
+        tdUnit.className = 'c-unit';
+
+        const tdAmt = document.createElement('td');
+        tdAmt.className = 'c-amt';
+
+        if(typeof li.unitPrice === 'number'){
+          tdUnit.textContent = yen(li.unitPrice);
+          const qty = (typeof li.qty === 'number') ? li.qty : 1;
+          const amt = li.unitPrice * qty;
+          tdAmt.textContent = yen(amt);
+          setupTotal += amt;
+        } else {
+          tdUnit.textContent = '';
+          tdAmt.textContent = '';
+        }
+
+        tr.appendChild(tdDesc);
+        tr.appendChild(tdQty);
+        tr.appendChild(tdUnit);
+        tr.appendChild(tdAmt);
+        tbody.appendChild(tr);
+      });
+
+      // 初期費用合計
+      const subtotalTr = document.createElement('tr');
+      subtotalTr.className = 'section-subtotal';
+      subtotalTr.innerHTML = `
+        <td colspan="3" style="text-align:right; font-weight:800;">■初期費用合計</td>
+        <td class="c-amt" style="font-weight:800;">${yen(setupTotal)}</td>
+      `;
+      tbody.appendChild(subtotalTr);
+    }
+
+    // その他（フリーフォーム）
+    otherLines.forEach(li => {
       const tr = document.createElement('tr');
-
       const tdDesc = document.createElement('td');
-      tdDesc.className='desc';
+      tdDesc.className = 'desc';
       tdDesc.textContent = li.name;
 
       const tdQty = document.createElement('td');
-      tdQty.className='c-qty';
+      tdQty.className = 'c-qty';
       tdQty.textContent = li.qty;
 
       const tdUnit = document.createElement('td');
-      tdUnit.className='c-unit';
+      tdUnit.className = 'c-unit';
 
       const tdAmt = document.createElement('td');
-      tdAmt.className='c-amt';
+      tdAmt.className = 'c-amt';
 
       if(typeof li.unitPrice === 'number'){
         tdUnit.textContent = yen(li.unitPrice);
         const qty = (typeof li.qty === 'number') ? li.qty : 1;
         const amt = li.unitPrice * qty;
         tdAmt.textContent = yen(amt);
-        if(li.unitPrice < 0) tdUnit.classList.add('neg');
-        if(amt < 0) tdAmt.classList.add('neg');
-        subtotal += amt;
-      }else{
+        setupTotal += amt;
+      } else {
         tdUnit.textContent = '';
         tdAmt.textContent = '';
       }
@@ -3533,30 +1962,27 @@ function addTradeInOption(container) {
       tbody.appendChild(tr);
     });
 
-    const tax = Math.floor(subtotal * TAX_RATE);
+    const subtotal = annualTotal + setupTotal;
+    const tax = Math.round(subtotal * TAX_RATE);
     const total = subtotal + tax;
 
-    {
-      const elSub = document.getElementById('outSub');
-      const elTax = document.getElementById('outTax');
-      const elTotal = document.getElementById('outTotal');
-      const elGrand = document.getElementById('outGrand');
+    const elSub = document.getElementById('outSub');
+    const elTax = document.getElementById('outTax');
+    const elTotal = document.getElementById('outTotal');
+    const elGrand = document.getElementById('outGrand');
 
-      elSub.textContent = yen(subtotal);
-      elTax.textContent = yen(tax);
-      elTotal.textContent = yen(total);
-      elGrand.textContent = `￥${yen(total)} -`;
-
-      // マイナスは「符号なし＋赤字」で表現
-      elSub.classList.toggle('neg', subtotal < 0);
-      elTax.classList.toggle('neg', tax < 0);
-      elTotal.classList.toggle('neg', total < 0);
-      elGrand.classList.toggle('neg', total < 0);
-    }
-
-    updateOptionSummary();
+    elSub.textContent = yen(subtotal);
+    elTax.textContent = yen(tax);
+    elTotal.textContent = yen(total);
+    elGrand.textContent = `￥${yen(total)} -`;
   }
-  // === 追加：セクション別リセット ===
+
+  function resetDGNetSection(){
+    document.getElementById('dgnetBase').value = '';
+    renderDGNetOptions();
+    applyAndRender();
+  }
+
   function resetBasicInfoSection(){
     const today = new Date();
     const issueDate = document.getElementById('issueDate');
@@ -3567,50 +1993,16 @@ function addTradeInOption(container) {
     setVal('toBase','');
     setVal('toHonorific','御中');
     setVal('tantouSelect','');
-
     setVal('delivery','受注後 約3カ月');
-
-    // 受渡場所（住所）
     setVal('zip','');
     setVal('pref','');
     setVal('city','');
     setVal('town','');
     setVal('addr2','');
-
     setVal('payment','納入時 現金一括払い');
     setVal('valid','30日');
     setVal('notes','');
 
-    // 見積番号は触らない（必要ならヘッダーの再生成ボタンを使用）
-    applyAndRender();
-  }
-
-  function resetMachineSection(){
-    // 本体・運送費・本体オプションのみ初期化
-    basePriceManuallyEdited = false;
-
-    const cat = document.getElementById('machineCategory');
-    if(cat) cat.value = 'single';
-    updateMachineSelectors();
-
-    const setVal = (id,val)=>{ const el=document.getElementById(id); if(el) el.value = val; };
-    setVal('baseQty', 1);
-    setVal('baseUnitPrice','');
-
-    // 本体オプション
-    resetAllOptions();
-
-    // 運送費
-    const region = document.getElementById('region');
-    if(region) region.value = 'kinki';
-    const other = document.getElementById('regionOtherPrice');
-    if(other){ other.value=''; other.disabled=true; }
-
-    applyAndRender();
-  }
-
-  function resetSoftwareSection(){
-    if(typeof resetDGSoftware === 'function') resetDGSoftware();
     applyAndRender();
   }
 
@@ -3622,28 +2014,15 @@ function addTradeInOption(container) {
     document.getElementById('toHonorific').value = '御中';
     document.getElementById('tantouSelect').value = '';
 
-    // FREEFORM版：機種選択は無効化
-    // basePriceManuallyEdited = false;
-    // document.getElementById('machineCategory').value = 'single';
-    // updateMachineSelectors();
-    // document.getElementById('baseQty').value = 1;
-    // document.getElementById('baseUnitPrice').value = '';
+    resetDGSoftwareSection();
 
-    // オプションのリセット
-    // resetAllOptions();
+    document.getElementById('dgnetBase').value = '';
+    renderDGNetOptions();
 
-    // 刺繍ソフト（DG）のリセット
-    if(typeof resetDGSoftware === "function") resetDGSoftware();
+    freeformLines = [];
+    saveFreeform();
+    renderFreeform();
 
-    // 刺繍枠（TFA/TFA2）のリセット
-    // if(typeof resetTFASection === "function") resetTFASection();
-
-    // 運送費：FREEFORM版では不要
-    // document.getElementById('region').value = 'kinki';
-    // document.getElementById('regionOtherPrice').value = '';
-    // document.getElementById('regionOtherPrice').disabled = true;
-
-    // 条件：デフォルト値に戻す
     document.getElementById('delivery').value = '受注後 約3カ月';
     document.getElementById('zip').value = '';
     document.getElementById('pref').value = '';
@@ -3652,207 +2031,66 @@ function addTradeInOption(container) {
     document.getElementById('addr2').value = '';
     document.getElementById('payment').value = '納入時 現金一括払い';
     document.getElementById('valid').value = '30日';
-
     document.getElementById('notes').value = '';
 
-    // 見積番号：空から開始
     quoteNoManuallyEdited = false;
     document.getElementById('quoteNo').value = '';
 
     applyAndRender();
   }
 
-  function resetAllOptions() {
-    // 全オプションのチェックを外す
-    const checkboxes = document.querySelectorAll('#optList input[type="checkbox"]');
-    checkboxes.forEach(cb => {
-      cb.checked = false;
-      const row = cb.closest('.opt-row');
-      if (row) row.className = 'opt-row off';
-    });
-    
-    // 全オプションの数量を1にリセット
-    const qtyInputs = document.querySelectorAll('#optList .opt-qty');
-    qtyInputs.forEach(input => {
-      input.value = '1';
-    });
-    
-    // 原反枠のドロップダウンをリセット
-    const bffType = document.getElementById('opt_bff_type');
-    if (bffType) bffType.selectedIndex = 0;
-    
-
-// 値引きをリセット
-const discAmt = document.getElementById('opt_discount_amount');
-if (discAmt) discAmt.value = '';
-
-// その他オプション（任意追加対応）をリセット
-const otherBoxesReset = document.querySelectorAll('#optList input[type="checkbox"][id^="opt_other"]');
-otherBoxesReset.forEach(cb=>{
-  const idx = parseInt(cb.id.replace('opt_other',''), 10);
-  if(!Number.isFinite(idx)) return;
-  const key = `other${idx}`;
-  const nm = document.getElementById(`opt_${key}_name`);
-  const pr = document.getElementById(`opt_${key}_price`);
-  if(nm) nm.value = '';
-  if(pr) pr.value = '';
-});
-
-// 追加分は初期化（3枠に戻す）
-otherDynamic = [];
-otherDynamicNext = OTHER_BASE_COUNT + 1;
-saveOtherDynamic();
-updateOptionsList();
-    // サマリーをクリア
-    updateOptionSummary();
-  }
-
-  // === 追加：刺繍ソフト（DG）を一括リセット ===
-  function resetDGSoftware(){
-    const grade = document.getElementById("dgGrade");
-    const qty = document.getElementById("dgQty");
-
-    if(qty) qty.value = "1";
-
-    if(grade){
-      grade.value = "";
+    async function saveAsPDF(){
+    const seidNo = document.getElementById('seidNo').value.trim();
+    if(!seidNo){
+      alert('SEID番号を採番してから保存してください。');
+      return;
     }
 
-    // 一旦チェックを外す（残存DOMがある場合の安全策）
-    ["dgopt","dgfont","dglan"].forEach(prefix=>{
-      try{
-        clearDGSelections(prefix);
-      }catch(e){}
-    });
+    const customer = document.getElementById('toBase').value.trim() || '顧客名未入力';
+    const quoteNo = document.getElementById('quoteNo').value.trim() || 'DGNET';
+    const safeCustomer = customer.replace(/[\\/:*?"<>|]/g,'-');
+    const fileName = `${seidNo}_${quoteNo}_${safeCustomer}`;
 
-    // リストを再描画（未選択＝全非表示）
-    try{
-      renderDGLists();
-    }catch(e){}
+    // テキストPDF（ブラウザのPDF保存）で出力する：
+    // 画像化（html2canvas/jsPDF）は使わず、印刷エンジンに任せることで
+    // 文字選択できるPDFになり、容量も軽くなります。
+    const prevTitle = document.title;
 
-    // DG講習費用（入力式）をリセット
-    const lcb = document.getElementById('dgopt_DG_LESSON');
-    const lprice = document.getElementById('dgopt_DG_LESSON_price');
-    const lqty = document.getElementById('dgopt_DG_LESSON_qty');
-    if(lcb) lcb.checked = false;
-    if(lprice) lprice.value = '0';
-    if(lqty) lqty.value = '1';
-    const lrow = document.getElementById('dgopt_row_DG_LESSON');
-    if(lrow) lrow.className = 'opt-row off';
+    document.body.classList.add('pdf-mode');
+    document.title = fileName;
 
-    // パネルは閉じておく
-    const optPanel = document.getElementById("dgOptPanel");
-    const fontPanel = document.getElementById("dgFontPanel");
-    const lanPanel = document.getElementById("dgLanPanel");
-    if(optPanel) optPanel.open = false;
-    if(fontPanel) fontPanel.open = false;
-    if(lanPanel) lanPanel.open = false;
+    const cleanup = () => {
+      document.title = prevTitle;
+      document.body.classList.remove('pdf-mode');
+    };
 
-    // サマリー表示を消す
-    try{
-      updateDGSummary();
-    }catch(e){}
+    window.addEventListener('afterprint', cleanup, { once:true });
+
+    // ここで「PDFに保存」を選択して保存してください（Windows/Chrome/Edge）
+    window.print();
   }
 
-
- window.addEventListener('DOMContentLoaded', () => {
-  const today = new Date();
-  document.getElementById('issueDate').valueAsDate = today;
-
-  document.getElementById('delivery').value = '受注後 約3カ月';
-  document.getElementById('payment').value = '納入時 現金一括払い';
-  document.getElementById('valid').value = '30日';
-
-  loadOtherDynamic();
-  initDGSoftwareUI();
-  loadFreeform();
-  renderFreeform();
-
-  // 管理番号は独立して生成
-  document.getElementById('quoteNo').value = generateQuoteNoNow();
-});
-
-</script>
-
-<script>
-// ===== 展示会DBからの顧客情報自動入力 =====
-(function() {
-  function getParam(name) {
-    return decodeURIComponent(new URLSearchParams(window.location.search).get(name) || '');
+  function printQuote(){
+    window.print();
   }
-  function setVal(id, val) {
-    const el = document.getElementById(id);
-    if (el && val) {
-      el.value = val;
-      el.dispatchEvent(new Event('input'));
-    }
-  }
-  function extractAddr2(fullAddr) {
-    // 都道府県・市区町村・町名をlookupZipが入力した後の残りを抽出
-    const pref = document.getElementById('pref')?.value || '';
-    const city = document.getElementById('city')?.value || '';
-    const town = document.getElementById('town')?.value || '';
-    let remainder = fullAddr;
-    // 町名まで含めて削除（最長一致で削除）
-    const matched = [pref, city, town].filter(Boolean).join('');
-    if (matched && fullAddr.includes(matched)) {
-      remainder = fullAddr.substring(fullAddr.indexOf(matched) + matched.length).trim();
-    } else if (town && fullAddr.includes(town)) {
-      remainder = fullAddr.substring(fullAddr.indexOf(town) + town.length).trim();
-    } else if (city && fullAddr.includes(city)) {
-      remainder = fullAddr.substring(fullAddr.indexOf(city) + city.length).trim();
-    } else if (pref && fullAddr.includes(pref)) {
-      remainder = fullAddr.substring(fullAddr.indexOf(pref) + pref.length).trim();
-    }
-    return remainder || fullAddr;
-  }
-  window.addEventListener('DOMContentLoaded', function() {
-    const company = getParam('company');
-    const postal  = getParam('postal');
-    const address = getParam('address');
 
-    if (company) setVal('toBase', company);
+  window.addEventListener('DOMContentLoaded', () => {
+    const today = new Date();
+    document.getElementById('issueDate').valueAsDate = today;
 
-    if (postal) {
-      setVal('zip', postal);
-      // lookupZipで都道府県・市区町村・町名を自動入力
-      setTimeout(function() {
-        if (typeof lookupZip === 'function') {
-          lookupZip();
-          // lookupZip完了後に番地だけ入力
-          setTimeout(function() {
-            if (address) {
-              const addr2 = extractAddr2(address);
-              setVal('addr2', addr2);
-            }
-          }, 1200);
-        } else if (address) {
-          setVal('addr2', address);
-        }
-      }, 300);
-    } else if (address) {
-      // 郵便番号なし：住所を都道府県〜番地に分けてパース
-      const m = address.match(/^(.*?[都道府県])(.*?[市区町村郡])(.*?[町丁目]|\d)(.*)$/);
-      if (m) {
-        setVal('pref',  m[1]);
-        setVal('city',  m[2]);
-        setVal('town',  m[3]);
-        setVal('addr2', m[4].trim());
-      } else {
-        setVal('addr2', address);
-      }
-    }
+    document.getElementById('delivery').value = '受注後 約3カ月';
+    document.getElementById('payment').value = '納入時 現金一括払い';
+    document.getElementById('valid').value = '30日';
 
-    if (company || postal || address) {
-      const banner = document.createElement('div');
-      banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#0f6e56;color:#fff;text-align:center;padding:10px;font-size:13px;z-index:9999;font-family:sans-serif;';
-      banner.textContent = '✓ 展示会来場者情報を自動入力しました。内容をご確認ください。';
-      document.body.prepend(banner);
-      setTimeout(function() { banner.style.transition='opacity 0.5s'; banner.style.opacity='0'; setTimeout(function(){banner.style.display='none';},500); }, 4000);
-    }
+    initDGSoftwareUI();
+    loadFreeform();
+    renderFreeform();
+
+    document.getElementById('quoteNo').value = generateQuoteNoNow();
+
+    applyAndRender();
   });
-})();
+
 </script>
 </body>
 </html>
-
